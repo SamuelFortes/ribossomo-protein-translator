@@ -1,0 +1,281 @@
+=== PAGE 1 ===
+Sumário  
+Slides  ................................ ................................ ................................ ................................ ................................ ................  2 
+1. Papel do Ribossomo  ................................ ................................ ................................ ................................ ...............  3 
+2. Formato de entrada  ................................ ................................ ................................ ................................ ................  3 
+3. Convenção didática para a tradução  ................................ ................................ ................................ .................  3 
+4. Regra de identificação da região codificante  ................................ ................................ ................................ . 3 
+5. Operação de tradução  ................................ ................................ ................................ ................................ ...........  4 
+6. Código genético e representação dos aminoácidos  ................................ ................................ .....................  4 
+7. Regra de término e validação das extremidades  ................................ ................................ ...........................  4 
+8. Casos que o programa deverá reconhecer  ................................ ................................ ................................ ...... 4 
+9. Saída padrão para a tela  ................................ ................................ ................................ ................................ ........  5 
+10. Processamento em lote  ................................ ................................ ................................ ................................ ...... 5 
+11. Saída padrão para arquivo exportado  ................................ ................................ ................................ ............  5 
+12. Requisitos de implementação  ................................ ................................ ................................ ...........................  5 
+13. Resumo do algoritmo  ................................ ................................ ................................ ................................ ..........  6 
+14. Exemplos de entrada e saída por caso  ................................ ................................ ................................ ...........  6 
+14.1 CORRETO  ................................ ................................ ................................ ................................ ...........................  7 
+14.2 BUG - CAP 5'  ................................ ................................ ................................ ................................ .....................  7 
+14.3 BUG - START ausente  ................................ ................................ ................................ ................................ .... 7 
+14.4 BUG - STOP ausente  ................................ ................................ ................................ ................................ .......  8 
+14.5 BUG - quadro de leitura  ................................ ................................ ................................ ................................  8 
+14.6 BUG - cauda poli -A ................................ ................................ ................................ ................................ .........  9 
+ 
+  
+
+=== PAGE 2 ===
+Ribossomo  
+Protein Translator — Especificação da Atividade  
+2 
+ Slides  
+ 
+
+
+=== PAGE 3 ===
+Ribossomo  
+Protein Translator — Especificação da Atividade  
+3 
+ Objetivo : receber um mRNA maduro e simular, de forma didática, sua tradução até a geração de 
+uma sequência de aminoácidos (proteína).  
+1. Papel do Ribossomo  
+Entrada : mRNA maduro produzido pelo BioCompiler 2.0.  
+Processamento : validação da estrutura do mRNA, identificação da região codificante, leitura dos 
+códons e tradução pelo código genético.  
+Saída : sequência de aminoácidos, quando a entrada for válida; caso contrário, um diagnóstico do 
+problema.  
+Fase I: DNA transcrito em pré -mRNA — BioCompiler 1.0 
+Fase II: pré -mRNA amadurecido em mRNA maduro — BioCompiler 2.0 
+Fase III: mRNA traduzido em proteína  — Ribossomo (objeto deste trabalho) 
+2. Formato de entrada  
+A entrada  será um arquivo texto  (.txt) contendo um ou mais mRNAs maduros. Cada linha 
+corresponde a uma sequência independente. O programa deverá processar as linhas na ordem em 
+que aparecem no arquivo.  
+Cada entrada deverá possuir a representação da CAP 5 ′ (m7Gppp), seguida da sequência de RNA 
+formada por A, U, G e C, e terminar com a cauda poli -A definida no projeto.  
+Estrutura geral:  
+m7GpppSEQUÊNCIA_PROCESSADA caudaPOLI -A 
+3. Convenção didática para a tradução  
+Para tornar o problema implementável e corrigível automaticamente, o Ribossomo  utilizará uma 
+representação simplificada da tradução. A CAP 5 ′ e a cauda poli -A serão validadas, mas não serão 
+traduzidas. A tradução ocorrerá somente na região compreendida entre o START e o STOP.  
+REGIÃO TRADUZIDA:  AUG  →  CÓDON  →  CÓDON  → ... →  UAA / UAG / UGA  
+4. Regra de identificação da região codificante  
+Após validar e desconsiderar  a CAP 5′, o programa deverá localizar o primeiro AUG  da sequência de 
+RNA. Esse códon será considerado o início da tradução. A partir dele, a leitura será realizada em 
+grupos de três nucleotídeos.  
+O término válido será o primeiro UAA, UAG ou UGA encontrado no mesmo quadro de leitura. 
+Trechos anteriores ao AUG e posteriores ao STOP pertencem, didaticamente, às regiões não 
+traduzidas e não devem gerar aminoácidos.  
+
+=== PAGE 4 ===
+Ribossomo  
+Protein Translator — Especificação da Atividade  
+4 
+ 5. Operação de tradução  
+O programa deverá percorrer a região codificante em trincas . Cada códon  deverá ser consultado na 
+tabela do código genético e convertido no aminoácido correspondente. O códon AUG  inicia a 
+tradução e codifica metionina. UAA, UAG e UGA  encerram a tradução e não acrescentam 
+aminoácidos à proteína.  
+mRNA:      AUG GCU AAA CCG UAA  
+           ↓   ↓   ↓   ↓  
+Proteína:  Met -Ala-Lys-Pro 
+6. Código genético e representação dos aminoácidos  
+O programa deverá possuir uma estrutura de dados que associe os códons de RNA aos aminoácidos 
+correspondentes. Recomenda -se utilizar um dicionário em Python  ou HashMap em Java . 
+Para padronizar a saída, os aminoácidos deverão ser representados pelo código de três letras, por 
+exemplo: Met , Ala, Lys, Pro, Gly e Leu . Os códons STOP  serão usados apenas como sinal de término.  
+7. Regra de término e validação das extremidades  
+Antes da tradução, o programa deverá confirmar a presença da CAP 5′ representada exatamente 
+por m7Gppp  e verificar a cauda poli -A. Para esta atividade, a cauda poli -A válida terá exatamente 
+100 adeninas (A)  consecutivas na extremidade 3 ′. 
+Após localizar AUG , o programa deverá encontrar um STOP em fase. Se a região entre START  e STOP  
+não puder ser lida corretamente em trincas, o caso será classificado como erro de quadro de leitura.  
+8. Casos que o programa deverá reconhecer  
+Caso  Situação  Resposta esperada  
+1 mRNA maduro válido e 
+traduzível  CORRETO  
+2 CAP 5′ ausente ou diferente 
+de m7Gppp  BUG - CAP 5'  
+3 Códon AUG  de iniciação 
+ausente  BUG - START ausente  
+4 STOP UAA, UAG ou UGA em 
+fase ausente  BUG - STOP ausente  
+5 Região codificante 
+incompatível com leitura em 
+trincas  BUG - quadro de leitura  
+6 Cauda poli -A ausente, 
+alterada ou diferente de 100 A  BUG - cauda poli -A 
+
+=== PAGE 5 ===
+Ribossomo  
+Protein Translator — Especificação da Atividade  
+5 
+ 9. Saída padrão para a tela  
+A saída exibida na tela será detalhada. Para cada linha, o programa mostrará o número da entrada, 
+o status, as principais validações e, quando aplicável, a proteína produzida.  
+========================================  
+RIBOSSOMO  - PROTEIN TRANSLATOR  
+========================================  
+ENTRADA: 1  
+STATUS: CORRETO  
+CAP 5': OK  
+START: AUG - OK 
+Quadro de leitura: OK  
+STOP: UAA - OK 
+Cauda poli -A: 100 A - OK 
+Tradução: OK  
+PROTEÍNA: Met -Ala-Lys-Pro 
+----------------------------------------  
+10. Processamento em lote  
+O arquivo poderá conter uma ou várias linhas. O programa deverá processar cada linha de forma 
+independente, preservar a ordem das entradas e gerar um resultado correspondente para cada 
+uma delas.  
+11. Saída padrão para arquivo exportado  
+Além da saída na tela, o programa deverá gerar um arquivo de resultados. Para facilitar a correção 
+automática, cada registro deverá ocupar uma linha, com campos separados por ponto e vírgula.  
+linha;status;resultado;proteina  
+1;OK;CORRETO;Met -Ala-Lys-Pro 
+2;ERRO;BUG - CAP 5';NÃO GERADA  
+3;ERRO;BUG - START ausente;NÃO GERADA  
+Padrão proposto : arquivo resultados.txt  (ou .csv), codificação UTF -8. Os textos da coluna 
+'resultado' devem ser reproduzidos exatamente como definidos nesta especificação.  
+12. Requisitos de implementação  
+• Linguagens aceitas: Java ou Python . 
+• O programa deve ler as entradas a partir de arquivo texto.  
+• Uma entrada por linha.  
+• Não assumir previamente qual caso está sendo analisado.  
+• Validar CAP 5 ′ e cauda poli -A antes da tradução.  
+
+=== PAGE 6 ===
+Ribossomo  
+Protein Translator — Especificação da Atividade  
+6 
+ • Utilizar uma estrutura de dados para representar o código genético (por exemplo, 
+Dictionary/dict em Python ou HashMap em Java).  
+• A tradução deve começar no AUG e terminar no primeiro STOP em fase.  
+• O Ribossomo  termina na sequência de aminoácidos; não simula dobramento, modificações 
+pós -traducionais ou destino celular da proteína.  
+13. Resumo do algoritmo  
+LER linha 
+  ↓ 
+VALIDAR CAP 5′ 
+  ↓ 
+IDENTIFICAR e separar cauda poli -A 
+  ↓ 
+VALIDAR caracteres A/U/G/C  
+  ↓ 
+LOCALIZAR START (AUG)  
+  ↓ 
+LER códons em trincas  
+  ↓ 
+LOCALIZAR STOP em fase  
+  ↓ 
+TRADUZIR códons pelo código genético  
+  ↓ 
+GERAR PROTEÍNA + RELATÓRIO  
+Princípio da atividade : o aluno deve implementar um tradutor molecular baseado no código 
+genético, não memorizar casos de teste . 
+14. Exemplos de entrada e saída por caso  
+Suponha um arquivo de entrada com SEIS linhas, cada linha correspondendo a um mRNA maduro. 
+A primeira entrada é válida e as demais representam os cinco tipos de erro definidos nesta 
+atividade. A seguir são mostrados exemplos conceituais da saída na tela e d o registro no arquivo 
+exportado.  
+  
+
+=== PAGE 7 ===
+Ribossomo  
+Protein Translator — Especificação da Atividade  
+7 
+ 
+14.1 CORRETO  
+A entrada apresenta CAP 5 ′, AUG, região codificante em fase, STOP e cauda poli -A válida.  
+Entrada: 
+m7GpppCCAUGGCUAAACCGUAAGGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAA  
+Saída na tela:  
+ENTRADA: 1  
+STATUS: CORRETO  
+CAP 5': OK  
+START: AUG - OK 
+Quadro de leitura: OK  
+STOP: UAA - OK 
+Cauda poli -A: 100 A - OK 
+Tradução: OK  
+PROTEÍNA: Met -Ala-Lys-Pro 
+Registro no arquivo exportado:  
+1;OK;CORRETO;Met -Ala-Lys-Pro 
+14.2 BUG - CAP 5'  
+A sequência não inicia com a representação m7Gppp definida para a CAP 5 ′. 
+Entrada: 
+CCAUGGCUAAACCGUAAGGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAA  
+Saída na tela:  
+ENTRADA: 2  
+STATUS: ERRO  
+TIPO: BUG - CAP 5' 
+PROTEÍNA: NÃO GERADA  
+Registro no arquivo exportado:  
+2;ERRO;BUG - CAP 5';NÃO GERADA  
+14.3 BUG - START ausente  
+Após a CAP 5 ′, não existe um códon AUG para iniciar a tradução.  
+Entrada: 
+m7GpppCCGCCGCUAAACCGUAAGGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAA  
+Saída na tela:  
+ENTRADA: 3  
+STATUS: ERRO  
+
+=== PAGE 8 ===
+Ribossomo  
+Protein Translator — Especificação da Atividade  
+8 
+ TIPO: BUG - START ausente  
+PROTEÍNA: NÃO GERADA  
+Registro no arquivo exportado:  
+3;ERRO;BUG - START ausente;NÃO GERADA  
+14.4 BUG - STOP ausente  
+Existe AUG, mas não é encontrado UAA, UAG ou UGA em fase para encerrar a tradução.  
+Entrada: 
+m7GpppCCAUGGCUAAACCGGGCGGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAA  
+Saída na tela:  
+ENTRADA: 4  
+STATUS: ERRO  
+TIPO: BUG - STOP ausente  
+PROTEÍNA: NÃO GERADA  
+Registro no arquivo exportado:  
+4;ERRO;BUG - STOP ausente;NÃO GERADA  
+14.5 BUG - quadro de leitura  
+A região definida para tradução não mantém a organização esperada em grupos de três 
+nucleotídeos.  
+Entrada: 
+m7GpppCCAUGGCUAAAACCGUAAGGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAA  
+Saída na tela:  
+ENTRADA: 5  
+STATUS: ERRO  
+TIPO: BUG - quadro de leitura  
+PROTEÍNA: NÃO GERADA  
+Registro no arquivo exportado:  
+5;ERRO;BUG - quadro de leitura;NÃO GERADA  
+  
+
+=== PAGE 9 ===
+Ribossomo  
+Protein Translator — Especificação da Atividade  
+9 
+ 
+14.6 BUG - cauda poli -A 
+A extremidade 3 ′ não apresenta exatamente 100 adeninas consecutivas, conforme a convenção 
+do projeto.  
+Entrada: 
+m7GpppCCAUGGCUAAACCGUAAGGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA  
+Saída na tela:  
+ENTRADA: 6  
+STATUS: ERRO  
+TIPO: BUG - cauda poli -A 
+PROTEÍNA: NÃO GERADA  
+Registro no arquivo exportado:  
+6;ERRO;BUG - cauda poli -A;NÃO GERADA  
+
