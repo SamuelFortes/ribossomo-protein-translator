@@ -1,5 +1,8 @@
-import type { RibosomeAnalysis, ProcessingMode } from '../types';
+import type { RibosomeAnalysis, ProcessingMode, DnaAnalysis, RnaAnalysis, PipelineAnalysis } from '../types';
 import { analyzeMrna } from './translatorEngine';
+import { analyzeDna } from './dnaEngine';
+import { analyzeRna } from './rnaEngine';
+import { analyzePipeline } from './pipelineEngine';
 
 const API_BASE_URL = 'http://localhost:8000/api';
 
@@ -40,6 +43,124 @@ export async function analyzeSequences(
     return {
       results: fallback,
       error: `Falha ao conectar em ${API_BASE_URL}/translate (${message}). Exibindo resultado da simulação local como contingência.`,
+    };
+  }
+}
+
+/**
+ * Dispatch generalizado por fase, seguindo exatamente o mesmo padrão de
+ * analyzeSequences acima: mode='client' roda o engine local; mode=
+ * 'python_backend' tenta o endpoint remoto e cai automaticamente para o
+ * engine local em qualquer erro, sinalizando a contingência via `error`.
+ */
+
+export interface BackendDnaAnalyzeResponse {
+  results: DnaAnalysis[];
+}
+
+export async function analyzeDnaSequences(
+  sequences: string[],
+  mode: ProcessingMode,
+): Promise<{ results: DnaAnalysis[]; error?: string }> {
+  if (mode === 'client') {
+    const results = sequences.map((seq, i) => analyzeDna(seq, i + 1));
+    return { results };
+  }
+
+  try {
+    const body: BackendAnalyzeRequest = { sequences };
+    const res = await fetch(`${API_BASE_URL}/dna`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+
+    if (!res.ok) {
+      throw new Error(`Backend respondeu com status ${res.status}`);
+    }
+
+    const data = (await res.json()) as BackendDnaAnalyzeResponse;
+    return { results: data.results };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Erro desconhecido ao contatar o backend';
+    const fallback = sequences.map((seq, i) => analyzeDna(seq, i + 1));
+    return {
+      results: fallback,
+      error: `Falha ao conectar em ${API_BASE_URL}/dna (${message}). Exibindo resultado da simulação local como contingência.`,
+    };
+  }
+}
+
+export interface BackendRnaAnalyzeResponse {
+  results: RnaAnalysis[];
+}
+
+export async function analyzeRnaSequences(
+  sequences: string[],
+  mode: ProcessingMode,
+): Promise<{ results: RnaAnalysis[]; error?: string }> {
+  if (mode === 'client') {
+    const results = sequences.map((seq, i) => analyzeRna(seq, i + 1));
+    return { results };
+  }
+
+  try {
+    const body: BackendAnalyzeRequest = { sequences };
+    const res = await fetch(`${API_BASE_URL}/rna`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+
+    if (!res.ok) {
+      throw new Error(`Backend respondeu com status ${res.status}`);
+    }
+
+    const data = (await res.json()) as BackendRnaAnalyzeResponse;
+    return { results: data.results };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Erro desconhecido ao contatar o backend';
+    const fallback = sequences.map((seq, i) => analyzeRna(seq, i + 1));
+    return {
+      results: fallback,
+      error: `Falha ao conectar em ${API_BASE_URL}/rna (${message}). Exibindo resultado da simulação local como contingência.`,
+    };
+  }
+}
+
+export interface BackendPipelineAnalyzeResponse {
+  results: PipelineAnalysis[];
+}
+
+export async function analyzePipelineSequences(
+  sequences: string[],
+  mode: ProcessingMode,
+): Promise<{ results: PipelineAnalysis[]; error?: string }> {
+  if (mode === 'client') {
+    const results = sequences.map((seq, i) => analyzePipeline(seq, i + 1));
+    return { results };
+  }
+
+  try {
+    const body: BackendAnalyzeRequest = { sequences };
+    const res = await fetch(`${API_BASE_URL}/pipeline`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+
+    if (!res.ok) {
+      throw new Error(`Backend respondeu com status ${res.status}`);
+    }
+
+    const data = (await res.json()) as BackendPipelineAnalyzeResponse;
+    return { results: data.results };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Erro desconhecido ao contatar o backend';
+    const fallback = sequences.map((seq, i) => analyzePipeline(seq, i + 1));
+    return {
+      results: fallback,
+      error: `Falha ao conectar em ${API_BASE_URL}/pipeline (${message}). Exibindo resultado da simulação local como contingência.`,
     };
   }
 }

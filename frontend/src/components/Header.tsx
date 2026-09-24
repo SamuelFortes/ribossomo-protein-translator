@@ -1,30 +1,60 @@
-import { Dna, Server, Cpu, Code2 } from 'lucide-react';
-import type { ProcessingMode } from '../types';
+import { Dna, Server, Cpu, Code2, Workflow } from 'lucide-react';
+import type { ProcessingMode, Phase } from '../types';
 
 interface HeaderProps {
   mode: ProcessingMode;
   onModeChange: (mode: ProcessingMode) => void;
+  phase: Phase;
+  onPhaseChange: (phase: Phase) => void;
   onOpenContract: () => void;
   backendWarning?: string | null;
 }
 
-export default function Header({ mode, onModeChange, onOpenContract, backendWarning }: HeaderProps) {
+const PHASES: { id: Phase; label: string }[] = [
+  { id: 'dna', label: 'Fase I: DNA' },
+  { id: 'rna', label: 'Fase II: RNA' },
+  { id: 'ribosome', label: 'Fase III: Ribossomo' },
+  { id: 'pipeline', label: 'Pipeline' },
+];
+
+export default function Header({ mode, onModeChange, phase, onPhaseChange, onOpenContract, backendWarning }: HeaderProps) {
   return (
     <header className="border-b border-slate-800 bg-slate-950/80 backdrop-blur">
       <div className="mx-auto flex max-w-7xl flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
           <div className="glow-cyan flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-cyan-500 to-purple-600">
-            <Dna size={20} className="text-white" />
+            {phase === 'pipeline' ? <Workflow size={20} className="text-white" /> : <Dna size={20} className="text-white" />}
           </div>
           <div>
             <h1 className="text-sm font-bold tracking-tight text-slate-100 sm:text-base">
-              RIBOSSOMO <span className="text-cyan-400">·</span> Protein Translator
+              BIOCOMPILER <span className="text-cyan-400">·</span> Protein Translator
             </h1>
-            <p className="text-[10px] text-slate-500">Tradutor didático de mRNA para proteínas · Especificação 1.0</p>
+            <p className="text-[10px] text-slate-500">DNA → pré-mRNA → mRNA maduro → proteína · Fluxo educacional completo</p>
           </div>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
+          <div
+            role="tablist"
+            aria-label="Selecionar fase do pipeline"
+            className="flex flex-wrap items-center rounded-lg border border-slate-800 bg-slate-900/60 p-0.5 text-[11px]"
+          >
+            {PHASES.map((p) => (
+              <button
+                key={p.id}
+                role="tab"
+                aria-selected={phase === p.id}
+                aria-label={p.label}
+                onClick={() => onPhaseChange(p.id)}
+                className={`rounded-md px-2.5 py-1.5 font-semibold transition ${
+                  phase === p.id ? 'bg-cyan-500/20 text-cyan-300' : 'text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                {p.label}
+              </button>
+            ))}
+          </div>
+
           <div className="flex items-center rounded-lg border border-slate-800 bg-slate-900/60 p-0.5 text-[11px]">
             <button
               onClick={() => onModeChange('client')}

@@ -2,15 +2,38 @@ import { Dna, FlaskConical, Upload, Play } from 'lucide-react';
 import { useRef } from 'react';
 import { OFFICIAL_TEST_CASES } from '../utils/translatorEngine';
 
+interface TestCase {
+  id: number | string;
+  name: string;
+  description?: string;
+  sequence: string;
+}
+
 interface SequenceInputProps {
   value: string;
   onChange: (v: string) => void;
   onAnalyze: () => void;
   onBatchAnalyze: (lines: string[]) => void;
   loading: boolean;
+  title?: string;
+  placeholder?: string;
+  analyzeLabel?: string;
+  testCases?: TestCase[];
+  testCasesLabel?: string;
 }
 
-export default function SequenceInput({ value, onChange, onAnalyze, onBatchAnalyze, loading }: SequenceInputProps) {
+export default function SequenceInput({
+  value,
+  onChange,
+  onAnalyze,
+  onBatchAnalyze,
+  loading,
+  title = 'Entrada de Sequência mRNA',
+  placeholder = "m7GpppCCAUGGCUAAACCGUAAGG...AAAA (cole 1 sequência ou várias, uma por linha, para lote)",
+  analyzeLabel = 'Traduzir',
+  testCases = OFFICIAL_TEST_CASES,
+  testCasesLabel = 'Casos de teste oficiais (Seção 14)',
+}: SequenceInputProps) {
   const fileRef = useRef<HTMLInputElement>(null);
 
   const handleFile = (file: File) => {
@@ -27,13 +50,13 @@ export default function SequenceInput({ value, onChange, onAnalyze, onBatchAnaly
     <div className="flex flex-col gap-4 rounded-2xl border border-slate-800 bg-slate-900/50 p-4">
       <div className="flex items-center gap-2 text-slate-200">
         <Dna size={18} className="text-cyan-400" />
-        <h2 className="text-sm font-semibold">Entrada de Sequência mRNA</h2>
+        <h2 className="text-sm font-semibold">{title}</h2>
       </div>
 
       <textarea
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        placeholder="m7GpppCCAUGGCUAAACCGUAAGG...AAAA (cole 1 sequência ou várias, uma por linha, para lote)"
+        placeholder={placeholder}
         rows={6}
         spellCheck={false}
         className="w-full resize-none rounded-xl border border-slate-800 bg-slate-950/70 p-3 font-mono text-xs text-slate-200 placeholder:text-slate-600 focus:border-cyan-500/60 focus:outline-none"
@@ -46,7 +69,7 @@ export default function SequenceInput({ value, onChange, onAnalyze, onBatchAnaly
           className="glow-cyan flex items-center gap-2 rounded-lg bg-cyan-500 px-4 py-2 text-xs font-semibold text-slate-950 transition hover:bg-cyan-400 disabled:cursor-not-allowed disabled:opacity-40"
         >
           <Play size={14} />
-          Traduzir
+          {analyzeLabel}
         </button>
 
         <button
@@ -80,24 +103,26 @@ export default function SequenceInput({ value, onChange, onAnalyze, onBatchAnaly
         />
       </div>
 
-      <div>
-        <div className="mb-2 flex items-center gap-2 text-xs font-semibold text-slate-400">
-          <FlaskConical size={14} className="text-emerald-400" />
-          Casos de teste oficiais (Seção 14)
+      {testCases.length > 0 && (
+        <div>
+          <div className="mb-2 flex items-center gap-2 text-xs font-semibold text-slate-400">
+            <FlaskConical size={14} className="text-emerald-400" />
+            {testCasesLabel}
+          </div>
+          <div className="grid grid-cols-1 gap-1.5 sm:grid-cols-2">
+            {testCases.map((tc) => (
+              <button
+                key={tc.id}
+                onClick={() => onChange(tc.sequence)}
+                title={tc.description}
+                className="rounded-lg border border-slate-800 bg-slate-950/50 px-3 py-2 text-left text-[11px] text-slate-300 transition hover:border-cyan-500/50 hover:bg-slate-900"
+              >
+                <span className="font-mono font-semibold text-cyan-400">#{tc.id}</span> {tc.name}
+              </button>
+            ))}
+          </div>
         </div>
-        <div className="grid grid-cols-1 gap-1.5 sm:grid-cols-2">
-          {OFFICIAL_TEST_CASES.map((tc) => (
-            <button
-              key={tc.id}
-              onClick={() => onChange(tc.sequence)}
-              title={tc.description}
-              className="rounded-lg border border-slate-800 bg-slate-950/50 px-3 py-2 text-left text-[11px] text-slate-300 transition hover:border-cyan-500/50 hover:bg-slate-900"
-            >
-              <span className="font-mono font-semibold text-cyan-400">#{tc.id}</span> {tc.name}
-            </button>
-          ))}
-        </div>
-      </div>
+      )}
     </div>
   );
 }

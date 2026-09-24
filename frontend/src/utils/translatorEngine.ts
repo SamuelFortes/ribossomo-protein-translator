@@ -132,8 +132,36 @@ export function analyzeMrna(line: string, entryNumber: number = 1): RibosomeAnal
   // 2. Validar cauda poli-A (exatamente 100 adeninas na extremidade 3')
   // We identify consecutive trailing 'A's
   const polyAMatch = afterCap.match(/A+$/);
-  const trailingACount = polyAMatch ? polyAMatch[0].length : 0;
+  let trailingACount = polyAMatch ? polyAMatch[0].length : 0;
   polyALength = trailingACount;
+
+  // Seção 7 do PDF exige "exatamente 100 adeninas consecutivas na extremidade 3'". Quando o STOP
+  // em fase é UAA ou UGA (ambos terminam em 'A'), suas próprias bases finais são contadas junto
+  // com a cauda pelo regex acima, inflando a contagem para 101/102 mesmo com uma cauda real de
+  // 100 A. Aqui verificamos se o excedente pertence exatamente a um STOP UAA/UGA em fase antes de
+  // decidir pelo BUG - cauda poli -A.
+  if (trailingACount === 101 || trailingACount === 102) {
+    const assumedCore = afterCap.slice(0, afterCap.length - 100);
+    const lastCodon = assumedCore.slice(-3);
+    const excess = trailingACount - 100;
+    const expectedExcess = lastCodon === 'UAA' ? 2 : lastCodon === 'UGA' ? 1 : 0;
+    if (expectedExcess === excess) {
+      const augPos = assumedCore.indexOf('AUG');
+      if (augPos !== -1 && (assumedCore.length - 3 - augPos) % 3 === 0) {
+        let firstStopPos = -1;
+        for (let i = augPos; i + 3 <= assumedCore.length; i += 3) {
+          if (STOP_CODONS.has(assumedCore.slice(i, i + 3))) {
+            firstStopPos = i;
+            break;
+          }
+        }
+        if (firstStopPos === assumedCore.length - 3) {
+          trailingACount = 100;
+          polyALength = 100;
+        }
+      }
+    }
+  }
 
   if (trailingACount === 100) {
     polyAValid = true;
@@ -279,12 +307,20 @@ export function analyzeMrna(line: string, entryNumber: number = 1): RibosomeAnal
     didacticExplanation = `O ribossomo identificou a 5' UTR (${utr5.length} nt), iniciou no códon AUG (${startCodon}), leu ${foundCodons.length - 1} trincas em fase, encontrou o sinal de parada ${stopCodon} e finalizou na 3' UTR antes da cauda poli-A.`;
     biologicalContext = "Expressão gênica perfeita: a proteína funcional foi sintetizada sem anomalias conformacionais ou mutações deletérias.";
   } else {
-    // STOP NÃO encontrado em fase!
-    // Verificar se existe algum STOP codon (UAA, UAG, UGA) fora de fase após o AUG
-    // ou se a sequência sofreu frameshift (inserção/deleção)
+    // STOP NÃO encontrado em fase! Decide entre BUG - STOP ausente (14.4) e BUG -
+    // quadro de leitura (14.5) pela regra abaixo, derivada dos dois exemplos oficiais
+    // do PDF (seção 8 e 14.4/14.5): comparando os comprimentos EXATOS extraídos de
+    // pdf_text.txt, do AUG até o fim da sequência JÁ INCLUINDO a cauda poli-A, o
+    // exemplo 14.4 (rotulado STOP ausente) dá 117 (múltiplo de 3) e o 14.5 (rotulado
+    // quadro de leitura) dá 118 (não múltiplo de 3). Isto é uma interpretação dos
+    // exemplos do PDF (não uma regra explicitada literalmente no texto), adotada por
+    // reproduzir os dois únicos exemplos oficiais que distinguem os dois casos.
+    const totalFromAugToEnd = afterCap.length - augPos;
+    const frameCompletes = totalFromAugToEnd % 3 === 0;
+
+    // Mantido apenas para enriquecer a mensagem diagnóstica quando aplicável.
     let anyOutOfFrameStop = false;
     let outOfFrameStopCodon = '';
-
     for (const stop of ['UAA', 'UAG', 'UGA']) {
       const idx = rnaFromAug.indexOf(stop);
       if (idx !== -1) {
@@ -297,11 +333,13 @@ export function analyzeMrna(line: string, entryNumber: number = 1): RibosomeAnal
     status = 'ERRO';
     stopValid = false;
 
-    if (anyOutOfFrameStop) {
+    if (!frameCompletes) {
       // Caso 14.5: BUG - quadro de leitura
       result = 'BUG - quadro de leitura';
       readingFrameValid = false;
-      diagnosticSummary = `Erro de matriz de leitura: o códon de parada (${outOfFrameStopCodon}) existe na sequência, mas está fora da fase de leitura em trincas (frameshift).`;
+      diagnosticSummary = anyOutOfFrameStop
+        ? `Erro de matriz de leitura: o códon de parada (${outOfFrameStopCodon}) existe na sequência, mas está fora da fase de leitura em trincas (frameshift).`
+        : 'Erro de matriz de leitura: a região após o AUG, incluindo a cauda poli-A, não fecha em trincas completas (frameshift).';
       didacticExplanation = "A leitura do ribossomo é estritamente não sobreposta e ocorre em trincas (quadro de leitura). Se houver inserção ou deleção de bases em número não múltiplo de 3, toda a fase é deslocada, fazendo com que o STOP não seja lido corretamente.";
       biologicalContext = "Mutações frameshift costumam ser catastróficas, gerando proteínas aberrantes ou degradação pelo mecanismo de vigilância do mRNA (NMD).";
     } else {

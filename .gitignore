@@ -1,0 +1,6 @@
+# Orquestracao local dos agentes (canvas Maestri)
+.maestri/
+
+# Python
+__pycache__/
+*.py[cod]

@@ -1,0 +1,134 @@
+NOTA: Este PDF (BioCompiler 1.0.pdf) e composto majoritariamente por IMAGENS (slides grafic
+os), nao por texto extraivel. O texto abaixo foi transcrito manualmente a partir das imagens
+ (OCR visual) das 3 paginas do PDF.
+
+=== PAGINA 1 (capa) ===
+PROXIMA PISTA: EXERCICIO PROPOSTO: BIOCOMPILER
+"Sherlock DNA e Watson desafiam voce a transformar conhecimento biologico em solucao computacional!"
+SUA MISSAO: Desenvolver um programa que simule o fluxo da informacao genetica: DNA -> RNA -> PROTEINA
+- Valide, transcreva e traduza sequencias.
+- Detecte mutacoes e seus efeitos.
+- Projete um RNAi e avalie a especificidade.
+- Pense como um(a) cientista... programe como um(a) desenvolvedor(a)!
+"PREPARE SEU CODIGO. </> A VIDA DEPENDE DA INFORMACAO! </>"
+Cartaz: BIOCOMPILER - "Transforme o codigo da vida em logica de programacao e descubra padroes
+que podem salvar vidas!" MISSAO ACEITA?
+(Exemplo ilustrativo no monitor, NAO literal do enunciado):
+DNA = "ATG GAA CCG TAA"
+mRNA = transcrever(DNA)
+proteina = traduzir(mRNA)
+print(proteina)
+> Met - Glu - Pro - STOP
+
+=== PAGINA 2 ===
+BIOCOMPILER 1.0 - DNA TRANSCRIBER
+SLIDE 1/2: ENTRADA - O QUE SEU PROGRAMA VAI RECEBER
+
+O BioCompiler 1.0 recebe uma sequencia de DNA.
+Seu programa (BioCompiler 1.0) recebera uma unica linha de texto contendo esse DNA bruto.
+Ele devera validar, analisar e transcrever o DNA para gerar o pre-mRNA.
+
+PIPELINE DO SISTEMA: DNA -> PRE-mRNA -> BIOCOMPILER 2.0 (RNA PROCESSOR) (proximo modulo)
+BioCompiler 1.0 realiza a etapa DNA -> pre-mRNA.
+
+LEGENDA:
+- ATG = codon START (inicio)
+- TAA, TAG, TGA = codons STOP (termino)
+- seta = quadro de leitura (frame)
+- "O programa deve encontrar o primeiro ATG e buscar o STOP no mesmo quadro de leitura."
+
+CASO 1 - CORRETO
+Entrada (exemplo de DNA): GCGTAC ATG GCTAACGTTG GCTGAACTTC GGCTAC TGA
+Possui START (ATG) e STOP (TGA) no mesmo quadro de leitura e sem alteracoes.
+O que o programa deve detectar:
+- DNA valido. START encontrado.
+- STOP encontrado no frame correto.
+- Sem alteracoes em relacao a referencia.
+- Transcrever para pre-mRNA normalmente.
+
+CASO 2 - BASE INVALIDA
+Entrada (exemplo de DNA): GCGTAC ATG GCTAACG X TG GCTGAACTTC GGCTAC TGA
+Contem caractere diferente de A, T, C ou G.
+O que o programa deve detectar:
+- Caractere invalido encontrado.
+- Entrada rejeitada.
+
+CASO 3 - START AUSENTE
+Entrada (exemplo de DNA): GCGTACCTAC GCTAACGTTG GCTGAACTTC GGCTAC TGA
+Nao existe o codon START (ATG) na sequencia.
+O que o programa deve detectar:
+- Nenhum ATG encontrado.
+- Nao e possivel iniciar a transcricao.
+
+CASO 4 - STOP AUSENTE
+Entrada (exemplo de DNA): GCGTAC ATG GCTAACGTTG GCTGAACTTC GGCTACGCGT
+Possui START, mas nao ha TAA, TAG ou TGA no mesmo quadro de leitura ate o final.
+O que o programa deve detectar:
+- Nao encontrou codon STOP (TAA, TAG ou TGA) no quadro de leitura.
+- Regiao codificadora incompleta.
+
+CASO 5 - FRAMESHIFT (indel)
+Entrada (exemplo de DNA - delecao de 1 base em relacao a referencia): GCGTAC ATG GCTAACGTTG(falta 1 base) GCTGAACTTC GGCTAC TGA
+Insercao ou delecao de bases que altera o quadro de leitura.
+O que o programa deve detectar:
+- Alteracao no comprimento (nao multiplo de 3).
+- Quadro de leitura alterado (frameshift).
+- STOP no novo frame geralmente diferente.
+
+CASO 6 - NONSENSE (STOP prematuro)
+Entrada (exemplo de DNA - substituicao que gera STOP prematuro em relacao a referencia):
+GCGTAC ATG GCTAACGTTG TAA GAACTTC GGCTAC TGA
+Surge um codon STOP (TAA) antes do STOP esperado da regiao codificadora.
+O que o programa deve detectar:
+- STOP prematuro encontrado no codon 8 (antes do STOP esperado).
+- Provavel mutacao nonsense.
+
+NOTA FINAL (rodape verde): "A entrada contem apenas as letras A, T, C e G. Nao ha espacos,
+quebras de linha ou separadores. Seu programa deve analisar o DNA, validar a sequencia,
+identificar START e STOP, classificar o caso e, quando possivel, transcrever para o pre-mRNA
+(substituindo T por U)."
+
+=== PAGINA 3 ===
+BIOCOMPILER 1.0 - DNA TRANSCRIBER
+SLIDE 2/2: COMO USAR E O QUE O PROGRAMA FAZ
+
+Missao: validar o DNA, encontrar a regiao codificadora (START -> STOP) e transcrever o gene
+para gerar o pre-mRNA.
+(Personagem "Sr. Ribossomo": "DNA bom, pre-mRNA pronto!" / "SR. RIBOSSOMO CONFIA NO BIOCOMPILER 1.0!")
+
+COMO O PROGRAMA FUNCIONA:
+1. Ler o arquivo de entrada - Recebe um arquivo texto com uma ou mais sequencias de DNA (uma por linha).
+2. Validar a sequencia - Confere se contem apenas A, T, C e G.
+3. Localizar o codon START - Busca o inicio da regiao codificadora (ATG).
+4. Determinar o quadro de leitura - Mantem a leitura em trincas (codons).
+5. Procurar o codon STOP - Encontra TAA, TAG ou TGA no mesmo quadro de leitura.
+6. Transcrever DNA -> pre-mRNA - Converte T em U, mantendo a sequencia transcrita.
+
+ENTRADA DO PROGRAMA: Arquivo texto (uma entrada por linha).
+EXEMPLO (arquivo entrada.txt):
+ATGGCCAAATGA
+ATGGCXAAATGA
+TTGACCTGA
+ATGAAATAG
+
+(O BioCompiler 1.0 processara todas as sequencias do arquivo, gerando um relatorio para cada uma.)
+
+FORMATO DA SAIDA (tabela):
+Sequencia | Status   | Detalhe
+1         | APROVADO | Transcricao realizada
+2         | ERRO     | Base invalida: X
+3         | ERRO     | START (ATG) nao encontrado
+4         | ERRO     | STOP nao encontrado
+5         | ALERTA   | Frameshift detectado
+6         | ALERTA   | STOP prematuro (nonsense)
+
+TIPOS DE ENTRADA E ERROS ESPERADOS:
+CASO 1 CORRETO - DNA valido. Transcricao realizada.
+CASO 2 BASE INVALIDA - Caractere diferente de A, T, C ou G.
+CASO 3 START AUSENTE - Nao existe ATG valido.
+CASO 4 STOP AUSENTE - Nao ha TAA, TAG ou TGA no frame.
+CASO 5 FRAMESHIFT - Insercao ou delecao altera o quadro de leitura.
+CASO 6 NONSENSE - Surge STOP prematuro.
+
+Pipeline completo: DNA -> BIOCOMPILER 1.0 (DNA -> pre-mRNA) -> pre-mRNA -> BIOCOMPILER 2.0
+(pre-mRNA -> mRNA maduro) -> mRNA maduro -> SR. RIBOSSOMO (proteina)
