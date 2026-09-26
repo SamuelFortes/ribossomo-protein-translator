@@ -1,0 +1,8 @@
+| Caso                | Resposta esperada                 |
+| ------------------- | --------------------------------- |
+| 1 — Entrada correta | `CORRETO`                         |
+| 2 — Base inválida   | `BUG - base inválida`             |
+| 3 — START ausente   | `BUG - START ausente`             |
+| 4 — STOP ausente    | `BUG - STOP ausente`              |
+| 5 — Frameshift      | `BUG - frameshift`                |
+| 6 — Nonsense        | `BUG - nonsense / STOP prematuro` |

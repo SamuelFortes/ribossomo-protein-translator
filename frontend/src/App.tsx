@@ -7,12 +7,14 @@ import CodonTable from './components/CodonTable';
 import BatchPanel from './components/BatchPanel';
 import DnaReport from './components/DnaReport';
 import DnaBatchPanel from './components/DnaBatchPanel';
+import TerminalWindow from './components/TerminalWindow';
 import RnaReport from './components/RnaReport';
 import RnaBatchPanel from './components/RnaBatchPanel';
 import PipelineView from './components/PipelineView';
 import PipelineBatchPanel from './components/PipelineBatchPanel';
 import ApiContractModal from './components/ApiContractModal';
 import { analyzeSequences, analyzeDnaSequences, analyzeRnaSequences, analyzePipelineSequences } from './utils/apiClient';
+import { generateDnaTerminalOutput } from './utils/dnaEngine';
 import type { ProcessingMode, RibosomeAnalysis, Phase, DnaAnalysis, RnaAnalysis, PipelineAnalysis } from './types';
 
 function App() {
@@ -31,6 +33,7 @@ function App() {
   const [dnaSequence, setDnaSequence] = useState('');
   const [dnaResults, setDnaResults] = useState<DnaAnalysis[]>([]);
   const [dnaSelectedIndex, setDnaSelectedIndex] = useState<number | null>(null);
+  const [dnaViewTab, setDnaViewTab] = useState<'report' | 'terminal'>('report');
 
   // Fase II — RNA
   const [rnaSequence, setRnaSequence] = useState('');
@@ -194,13 +197,45 @@ function App() {
             </div>
 
             <div className="flex flex-col gap-4 lg:col-span-8">
-              {dnaSelected ? (
-                <DnaReport analysis={dnaSelected} />
-              ) : (
+              {dnaResults.length > 0 && (
+                <div className="flex gap-1 rounded-xl border border-slate-800 bg-slate-900/50 p-1 text-xs font-semibold">
+                  <button
+                    onClick={() => setDnaViewTab('report')}
+                    aria-pressed={dnaViewTab === 'report'}
+                    className={`flex-1 rounded-lg px-3 py-1.5 transition ${
+                      dnaViewTab === 'report' ? 'bg-cyan-500/20 text-cyan-300' : 'text-slate-400 hover:text-slate-200'
+                    }`}
+                  >
+                    Relatório
+                  </button>
+                  <button
+                    onClick={() => setDnaViewTab('terminal')}
+                    aria-pressed={dnaViewTab === 'terminal'}
+                    className={`flex-1 rounded-lg px-3 py-1.5 transition ${
+                      dnaViewTab === 'terminal' ? 'bg-cyan-500/20 text-cyan-300' : 'text-slate-400 hover:text-slate-200'
+                    }`}
+                  >
+                    Terminal
+                  </button>
+                </div>
+              )}
+
+              {dnaResults.length === 0 && (
                 <div className="flex h-full min-h-[300px] items-center justify-center rounded-2xl border border-dashed border-slate-800 p-6 text-center text-sm text-slate-500">
                   Cole ou carregue uma sequência de DNA e clique em "Transcrever" para ver o relatório da Fase I
                   (BioCompiler 1.0).
                 </div>
+              )}
+
+              {dnaResults.length > 0 && dnaViewTab === 'report' && dnaSelected && <DnaReport analysis={dnaSelected} />}
+
+              {dnaResults.length > 0 && dnaViewTab === 'terminal' && (
+                <TerminalWindow
+                  title="C:\WINDOWS\system32\cmd.exe"
+                  command="C:\BioCompiler> python main.py entrada.txt"
+                  output={generateDnaTerminalOutput(dnaResults)}
+                  downloadFileName="saida_terminal.txt"
+                />
               )}
             </div>
           </>

@@ -1,5 +1,6 @@
 import { CheckCircle2, XCircle, AlertTriangle, BookOpen } from 'lucide-react';
 import type { DnaAnalysis } from '../types';
+import SequenceRuler from './SequenceRuler';
 
 interface DnaReportProps {
   analysis: DnaAnalysis;
@@ -18,54 +19,28 @@ function StatusRow({ label, ok, detail }: { label: string; ok: boolean; detail?:
 }
 
 const STATUS_STYLES: Record<DnaAnalysis['status'], { border: string; bg: string; text: string; badge: string }> = {
-  APROVADO: { border: 'border-emerald-500/30', bg: 'bg-emerald-500/5 glow-emerald', text: 'text-emerald-300', badge: 'bg-emerald-500/20 text-emerald-300' },
+  CORRETO: { border: 'border-emerald-500/30', bg: 'bg-emerald-500/5 glow-emerald', text: 'text-emerald-300', badge: 'bg-emerald-500/20 text-emerald-300' },
   ERRO: { border: 'border-rose-500/30', bg: 'bg-rose-500/5 glow-rose', text: 'text-rose-400', badge: 'bg-rose-500/20 text-rose-300' },
-  ALERTA: { border: 'border-amber-500/30', bg: 'bg-amber-500/5', text: 'text-amber-300', badge: 'bg-amber-500/20 text-amber-300' },
 };
 
 function renderSequenceStrip(analysis: DnaAnalysis) {
-  const { rawSequence, invalidBase, invalidBasePosition, startIndex, stopIndex, valid } = analysis;
-
-  if (invalidBase && invalidBasePosition >= 0) {
-    const idx = invalidBasePosition - 1;
-    return (
-      <div className="break-all font-mono text-[11px] leading-relaxed">
-        <span className="text-slate-400">{rawSequence.slice(0, idx)}</span>
-        <span className="rounded bg-rose-500/30 px-0.5 font-bold text-rose-300" title="Base inválida">
-          {rawSequence[idx]}
-        </span>
-        <span className="text-slate-400">{rawSequence.slice(idx + 1)}</span>
-      </div>
-    );
-  }
-
-  if (startIndex < 0) {
-    return (
-      <div className="break-all font-mono text-[11px] leading-relaxed text-rose-400">
-        {rawSequence}
-        <span className="ml-2 rounded bg-rose-500/20 px-1.5 py-0.5 text-[10px] text-rose-300">START ausente</span>
-      </div>
-    );
-  }
-
-  const beforeStart = rawSequence.slice(0, startIndex);
-  const stopEnd = stopIndex >= 0 ? stopIndex + 3 : rawSequence.length;
-  const cds = rawSequence.slice(startIndex, valid ? stopEnd : rawSequence.length);
-  const afterStop = stopIndex >= 0 ? rawSequence.slice(stopEnd) : '';
+  const { cleanSequence, invalidBasePosition, startIndex, stopIndex, valid } = analysis;
 
   return (
-    <div className="break-all font-mono text-[11px] leading-relaxed">
-      <span className="text-slate-500" title="Antes do START">{beforeStart}</span>
-      <span
-        className={`rounded px-0.5 ${valid ? 'bg-emerald-500/20 text-emerald-300' : 'bg-amber-500/20 text-amber-300'}`}
-        title="Região codificadora (START..STOP)"
-      >
-        {cds}
-      </span>
-      {stopIndex < 0 && (
-        <span className="ml-2 rounded bg-rose-500/20 px-1.5 py-0.5 text-[10px] text-rose-300">STOP ausente</span>
+    <div className="flex flex-col gap-2">
+      <SequenceRuler
+        sequence={cleanSequence}
+        invalidBasePosition={invalidBasePosition}
+        startIndex={startIndex}
+        stopIndex={stopIndex}
+        valid={valid}
+      />
+      {startIndex < 0 && (
+        <span className="w-fit rounded bg-rose-500/20 px-1.5 py-0.5 text-[10px] text-rose-300">START ausente</span>
       )}
-      <span className="text-slate-500" title="Após o STOP">{afterStop}</span>
+      {startIndex >= 0 && stopIndex < 0 && (
+        <span className="w-fit rounded bg-rose-500/20 px-1.5 py-0.5 text-[10px] text-rose-300">STOP ausente</span>
+      )}
     </div>
   );
 }
@@ -99,8 +74,8 @@ export default function DnaReport({ analysis }: DnaReportProps) {
         </div>
 
         <div className="mt-3 rounded-lg bg-slate-950/60 p-3">
-          <div className="text-[10px] uppercase tracking-widest text-slate-500">Detalhe</div>
-          <div className={`mt-1 text-sm font-semibold ${style.text}`}>{analysis.detail}</div>
+          <div className="text-[10px] uppercase tracking-widest text-slate-500">Tipo</div>
+          <div className={`mt-1 text-sm font-semibold ${style.text}`}>{analysis.resultLabel}</div>
         </div>
 
         <div className="mt-3 rounded-lg bg-slate-950/60 p-3">

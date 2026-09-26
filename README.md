@@ -74,10 +74,12 @@ flowchart LR
 - **Detecção de Códon START:** Busca pela primeira ocorrência do códon iniciador `ATG`.
 - **Análise do Quadro de Leitura:** Varredura em trincas a partir do `ATG` à procura de códons de parada (`TAA`, `TAG`, `TGA`).
 - **Classificação Diagnóstica:**
-  - `APROVADO`: Transcrição realizada com sucesso para pré-mRNA (`T` → `U`).
-  - `ERRO`: Base inválida, START ausente ou ausência de códon de parada em fase.
-  - `ALERTA`: Mutação nonsense (STOP prematuro) ou mutação frameshift (inserção/deleção que quebra o frame).
-- **Processamento em Lote:** Entrada manual multi-linha ou importação de arquivos `.txt`, com exportação em formato tabular delimitado por ponto e vírgula (`;`).
+  - `CORRETO`: Transcrição realizada com sucesso para pré-mRNA (`T` → `U`).
+  - `ERRO`: Presença de anomalia biológica ou sintática (`BUG - base inválida`, `BUG - START ausente`, `BUG - STOP ausente`, `BUG - frameshift`, `BUG - nonsense / STOP prematuro`).
+- **Processamento em Lote:** Entrada manual multi-linha ou importação de `.txt`, com download de `resultados.txt` no formato oficial `linha;status;resultado;pre_mRNA` (seção 11 da especificação), utilizado para correção automática.
+- **Terminal Simulado:** Aba "Terminal", ao lado de "Relatório", com uma janela estilo Prompt de Comando que reproduz exatamente a saída de tela do programa de linha de comando (banner e blocos ENTRADA/STATUS/..., seções 9 e 14 da especificação), com botões para copiar e baixar `saida_terminal.txt`.
+- **Régua de Posições:** No relatório, cada base da sequência aparece com sua posição numerada a partir de 1, colorida pela região (antes do START, região codificante, base inválida) e com as trincas agrupadas a partir do `ATG` para visualizar o quadro de leitura.
+- **Fonte Normativa:** A Fase I segue "Especificações do BioCompiler 1.0 e slides.pdf" (em `BioCompiler2.0/biocompiler/`), com transcrição em `BioCompiler2.0/pdf_text_biocompiler1_v2.txt`.
 
 <a id="fase-ii--biocompiler-20-pré-mrna--mrna-maduro"></a>
 ### Fase II — BioCompiler 2.0 (pré-mRNA → mRNA maduro)

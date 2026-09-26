@@ -1,6 +1,7 @@
 import { Download, ListChecks } from 'lucide-react';
 import type { DnaAnalysis } from '../types';
 import { generateDnaExportContent } from '../utils/dnaEngine';
+import { downloadText } from './downloadText';
 
 interface DnaBatchPanelProps {
   results: DnaAnalysis[];
@@ -9,62 +10,56 @@ interface DnaBatchPanelProps {
 }
 
 const STATUS_TEXT: Record<DnaAnalysis['status'], string> = {
-  APROVADO: 'text-emerald-400',
+  CORRETO: 'text-emerald-400',
   ERRO: 'text-rose-400',
-  ALERTA: 'text-amber-400',
 };
 
 export default function DnaBatchPanel({ results, onSelect, selectedIndex }: DnaBatchPanelProps) {
   if (results.length === 0) return null;
 
   const total = results.length;
-  const aprovados = results.filter((r) => r.status === 'APROVADO').length;
+  const corretos = results.filter((r) => r.status === 'CORRETO').length;
   const erros = results.filter((r) => r.status === 'ERRO').length;
-  const alertas = results.filter((r) => r.status === 'ALERTA').length;
 
   const handleDownload = () => {
     const content = generateDnaExportContent(results);
-    const blob = new Blob([content], { type: 'text/csv;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'resultados_biocompiler1.txt';
-    a.click();
-    URL.revokeObjectURL(url);
+    downloadText(content, 'resultados.txt', 'text/csv;charset=utf-8');
   };
 
   return (
     <div className="rounded-2xl border border-slate-800 bg-slate-900/50 p-4">
-      <div className="mb-3 flex items-center justify-between">
+      <div className="mb-3 flex items-start justify-between gap-3">
         <div className="flex items-center gap-2 text-slate-200">
           <ListChecks size={16} className="text-cyan-400" />
           <h3 className="text-sm font-semibold">Processamento em Lote</h3>
         </div>
-        <button
-          onClick={handleDownload}
-          className="flex items-center gap-1.5 rounded-lg border border-cyan-500/40 px-3 py-1.5 text-[11px] font-semibold text-cyan-300 transition hover:bg-cyan-500/10"
-        >
-          <Download size={13} />
-          resultados.txt
-        </button>
+        <div className="flex flex-col items-end gap-1">
+          <button
+            onClick={handleDownload}
+            title="Formato oficial (linha;status;resultado;pre_mRNA) para correção automática"
+            className="flex items-center gap-1.5 rounded-lg border border-cyan-500/40 px-3 py-1.5 text-[11px] font-semibold text-cyan-300 transition hover:bg-cyan-500/10"
+          >
+            <Download size={13} />
+            resultados.txt
+          </button>
+          <span className="max-w-[220px] text-right text-[9px] leading-snug text-slate-500">
+            Formato oficial (linha;status;resultado;pre_mRNA) para correção automática
+          </span>
+        </div>
       </div>
 
-      <div className="mb-3 grid grid-cols-4 gap-2 text-center">
+      <div className="mb-3 grid grid-cols-3 gap-2 text-center">
         <div className="rounded-lg bg-slate-950/60 p-2">
           <div className="text-lg font-bold text-slate-100">{total}</div>
           <div className="text-[10px] uppercase text-slate-500">Total</div>
         </div>
         <div className="rounded-lg bg-emerald-500/10 p-2">
-          <div className="text-lg font-bold text-emerald-400">{aprovados}</div>
-          <div className="text-[10px] uppercase text-slate-500">Aprovado</div>
-        </div>
-        <div className="rounded-lg bg-amber-500/10 p-2">
-          <div className="text-lg font-bold text-amber-400">{alertas}</div>
-          <div className="text-[10px] uppercase text-slate-500">Alerta</div>
+          <div className="text-lg font-bold text-emerald-400">{corretos}</div>
+          <div className="text-[10px] uppercase text-slate-500">Corretos</div>
         </div>
         <div className="rounded-lg bg-rose-500/10 p-2">
           <div className="text-lg font-bold text-rose-400">{erros}</div>
-          <div className="text-[10px] uppercase text-slate-500">Erro</div>
+          <div className="text-[10px] uppercase text-slate-500">Erros</div>
         </div>
       </div>
 
@@ -79,7 +74,7 @@ export default function DnaBatchPanel({ results, onSelect, selectedIndex }: DnaB
           >
             <span className="font-mono text-slate-400">#{r.entryNumber}</span>
             <span className={`truncate px-2 ${STATUS_TEXT[r.status]}`}>{r.status}</span>
-            <span className="truncate font-mono text-slate-500">{r.detail}</span>
+            <span className="truncate font-mono text-slate-500">{r.resultLabel}</span>
           </button>
         ))}
       </div>

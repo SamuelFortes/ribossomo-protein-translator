@@ -82,11 +82,24 @@ export type Phase = 'dna' | 'rna' | 'ribosome' | 'pipeline';
 // ---------------------------------------------------------------------------
 
 /**
- * Rótulos de status literais do slide "FORMATO DA SAIDA" do PDF BioCompiler 1.0
- * (pagina 3), preferidos aqui em vez do par binario "CORRETO/ERRO" usado pelo
- * codigo Python legado (divergencia PDF vs codigo registrada em dnaEngine.ts).
+ * Status binário da seção 9 ("Saída padrão para a tela") do PDF oficial mais
+ * novo (Especificações do BioCompiler 1.0 e slides.pdf): STATUS: CORRETO ou
+ * STATUS: ERRO. Substitui o antigo par APROVADO/ALERTA (ver dnaEngine.ts).
  */
-export type DnaStatus = 'APROVADO' | 'ERRO' | 'ALERTA';
+export type DnaStatus = 'CORRETO' | 'ERRO';
+
+/**
+ * Texto literal da coluna "Resposta esperada" da seção 8 do PDF oficial mais
+ * novo, reproduzido exatamente como definido na especificação (usado também
+ * na saída em tela como TIPO e na exportação como "resultado").
+ */
+export type DnaResultLabel =
+  | 'CORRETO'
+  | 'BUG - base inválida'
+  | 'BUG - START ausente'
+  | 'BUG - STOP ausente'
+  | 'BUG - frameshift'
+  | 'BUG - nonsense / STOP prematuro';
 
 /**
  * Rótulo interno do caso de classificação (nomes das seções "CASO N" do PDF,
@@ -108,9 +121,11 @@ export interface DnaAnalysis {
 
   status: DnaStatus;
   dnaCase: DnaCase;
-  /** Texto literal da coluna "Detalhe" da tabela do PDF (ex.: "Base inválida: X"). */
+  /** Texto literal da coluna "Resposta esperada" (seção 8) / TIPO (seção 14). */
+  resultLabel: DnaResultLabel;
+  /** Mantido por compatibilidade; sempre igual a resultLabel. */
   detail: string;
-  valid: boolean; // true somente quando status === 'APROVADO'
+  valid: boolean; // true somente quando status === 'CORRETO'
 
   invalidBase: string; // base inválida encontrada, ou '' se nao aplicavel
   invalidBasePosition: number; // 1-indexed, -1 se nao aplicavel

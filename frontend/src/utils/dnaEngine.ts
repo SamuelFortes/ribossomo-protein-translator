@@ -1,56 +1,39 @@
-import type { DnaAnalysis, DnaCase, DnaStatus } from '../types';
+import type { DnaAnalysis, DnaCase, DnaResultLabel, DnaStatus } from '../types';
 
 /**
  * BioCompiler 1.0 - DNA Transcriber (Fase I).
- * Fonte primaria: BioCompiler2.0/BioCompiler 1.0.pdf (transcricao em
- * BioCompiler2.0/pdf_text_biocompiler1.txt). O codigo Python legado em
- * BioCompiler2.0/biocompiler/core.py serve apenas como desempate onde o PDF
- * e silencioso ou ambiguo (ver comentarios pontuais abaixo).
+ * Fonte primaria e oficial: BioCompiler2.0/biocompiler/"Especificações do
+ * BioCompiler 1.0 e slides.pdf" (seções 8, 9, 11 e 14) e
+ * BioCompiler2.0/biocompiler/"Respostas Esperadas Bio1.0.txt". Esse PDF
+ * substitui o "BioCompiler 1.0.pdf" antigo onde os dois divergirem.
  */
 
 export const DNA_ALPHABET = new Set(['A', 'T', 'C', 'G']);
 export const START_CODON = 'ATG';
 export const STOP_CODONS = new Set(['TAA', 'TAG', 'TGA']);
 
-// DIVERGENCIA (PDF vs codigo): o PDF de slides usa Status = APROVADO/ERRO/ALERTA
-// mais uma coluna "Detalhe" (pagina 3, "FORMATO DA SAIDA"), enquanto o codigo
-// Python usa sempre STATUS: CORRETO/ERRO + um campo TIPO com 6 strings fixas.
-// Regra da tarefa: PDF vence. Os rotulos abaixo seguem literalmente a tabela do PDF.
+// Seção 9 do PDF oficial: STATUS: CORRETO apenas para o caso 1; STATUS: ERRO
+// para os demais 5 casos (seção 8).
 function statusForCase(dnaCase: DnaCase): DnaStatus {
-  switch (dnaCase) {
-    case 'CORRETO':
-      return 'APROVADO';
-    case 'BASE_INVALIDA':
-    case 'START_AUSENTE':
-    case 'STOP_AUSENTE':
-      return 'ERRO';
-    case 'FRAMESHIFT':
-    case 'NONSENSE':
-      return 'ALERTA';
-  }
+  return dnaCase === 'CORRETO' ? 'CORRETO' : 'ERRO';
 }
 
-// AMBIGUIDADE DO PDF: pdf_text_biocompiler1.txt é uma transcrição manual (OCR
-// visual) de um PDF baseado em imagens e foi digitada sem acentuação (ex.:
-// "nao encontrado", "invalida"). Já pdf_text_biocompiler2.txt (extração de
-// texto real do PDF da Fase II) preserva acentos normalmente ("não", "sítio").
-// Isso indica que a ausência de acento na Fase I é um artefato da transcrição,
-// não do slide original. Decisão de desempate: restaurar a acentuação padrão
-// do portugues nas strings de "Detalhe", mantendo o resto do texto literal.
-function detailForCase(dnaCase: DnaCase, invalidBase: string): string {
+// Seção 8 do PDF oficial ("Resposta esperada") / Respostas Esperadas Bio1.0.txt.
+// Strings literais, reproduzidas exatamente como definidas na especificação.
+function resultLabelForCase(dnaCase: DnaCase): DnaResultLabel {
   switch (dnaCase) {
     case 'CORRETO':
-      return 'Transcrição realizada';
+      return 'CORRETO';
     case 'BASE_INVALIDA':
-      return `Base inválida: ${invalidBase}`;
+      return 'BUG - base inválida';
     case 'START_AUSENTE':
-      return 'START (ATG) não encontrado';
+      return 'BUG - START ausente';
     case 'STOP_AUSENTE':
-      return 'STOP não encontrado';
+      return 'BUG - STOP ausente';
     case 'FRAMESHIFT':
-      return 'Frameshift detectado';
+      return 'BUG - frameshift';
     case 'NONSENSE':
-      return 'STOP prematuro (nonsense)';
+      return 'BUG - nonsense / STOP prematuro';
   }
 }
 
@@ -81,8 +64,8 @@ function buildResult(
   overrides: Partial<DnaAnalysis>,
 ): DnaAnalysis {
   const status = statusForCase(dnaCase);
+  const resultLabel = resultLabelForCase(dnaCase);
   const invalidBase = overrides.invalidBase ?? '';
-  const detail = detailForCase(dnaCase, invalidBase);
   const valid = dnaCase === 'CORRETO';
 
   return {
@@ -91,7 +74,8 @@ function buildResult(
     cleanSequence: cleanSeq,
     status,
     dnaCase,
-    detail,
+    resultLabel,
+    detail: resultLabel,
     valid,
     invalidBase,
     invalidBasePosition: -1,
@@ -228,49 +212,55 @@ export function analyzeDna(line: string, entryNumber: number = 1): DnaAnalysis {
 }
 
 /**
- * Formato de exportacao (arquivo). O PDF (pagina 3) define apenas o formato
- * em tela (tabela "Sequencia | Status | Detalhe") e nao especifica um layout
- * de arquivo exportado para a Fase I (diferente da Fase II, cujo CSV e
- * literal na especificacao). AMBIGUIDADE: por ausencia de definicao no PDF,
- * o layout abaixo espelha o padrao ja usado pela Fase II
- * (`linha;status;resultado;<saida>`), substituindo a coluna "Detalhe" pelo
- * literal da tabela do PDF, e mantendo status OK/ERRO (Fase III/pipeline)
- * em vez de APROVADO/ALERTA para uniformizar a coluna machine-readable.
+ * Formato de exportação (arquivo) — seção 11 do PDF oficial:
+ * `linha;status;resultado;pre_mRNA`, status machine-readable OK/ERRO
+ * (`a.valid`), "resultado" = resultLabel literal, pré-mRNA ou "NÃO GERADO".
  */
 export function generateDnaExportContent(analyses: DnaAnalysis[]): string {
-  const lines: string[] = ['linha;status;detalhe;pre_mRNA'];
+  const lines: string[] = ['linha;status;resultado;pre_mRNA'];
   for (const a of analyses) {
     const machineStatus = a.valid ? 'OK' : 'ERRO';
-    lines.push(`${a.entryNumber};${machineStatus};${a.detail};${a.preMrna}`);
+    lines.push(`${a.entryNumber};${machineStatus};${a.resultLabel};${a.preMrna}`);
   }
   return lines.join('\n');
 }
 
-export function generateDnaScreenReport(analysis: DnaAnalysis): string {
-  const header = [
+/**
+ * Saída padrão para a tela (seções 9 e 14 do PDF oficial) para um lote de
+ * entradas: o banner aparece uma única vez no topo, seguido de um bloco por
+ * entrada. Bloco CORRETO segue o formato do exemplo 14.1 (inclui o códon no
+ * STOP); bloco de erro (14.2-14.6) só traz ENTRADA/STATUS/TIPO/pré-mRNA.
+ */
+export function generateDnaTerminalOutput(analyses: DnaAnalysis[]): string {
+  const lines: string[] = [
     '========================================',
     'BIOCOMPILER 1.0 - DNA TRANSCRIBER',
     '========================================',
-    `ENTRADA: ${analysis.entryNumber}`,
   ];
 
-  if (analysis.valid) {
-    return [
-      ...header,
-      `Status: ${analysis.status}`,
-      `Detalhe: ${analysis.detail}`,
-      `START: ${START_CODON} - OK (posição ${analysis.startIndex + 1})`,
-      `STOP: ${analysis.stopCodon} - OK (posição ${analysis.stopIndex + 1})`,
-      `pré-mRNA: ${analysis.preMrna}`,
-      '----------------------------------------',
-    ].join('\n');
+  for (const a of analyses) {
+    lines.push(`ENTRADA: ${a.entryNumber}`);
+    lines.push(`STATUS: ${a.status}`);
+
+    if (a.valid) {
+      lines.push('Bases: OK');
+      lines.push(`START: ${START_CODON} - OK`);
+      lines.push('Quadro de leitura: OK');
+      lines.push(`STOP: ${a.stopCodon} - OK`);
+      lines.push('Transcrição: OK');
+      lines.push(`pré-mRNA: ${a.preMrna}`);
+    } else {
+      lines.push(`TIPO: ${a.resultLabel}`);
+      lines.push('pré-mRNA: NÃO GERADO');
+    }
+
+    lines.push('----------------------------------------');
   }
 
-  return [
-    ...header,
-    `Status: ${analysis.status}`,
-    `Detalhe: ${analysis.detail}`,
-    `pré-mRNA: NÃO GERADO`,
-    '----------------------------------------',
-  ].join('\n');
+  return lines.join('\n');
+}
+
+/** Wrapper de compatibilidade para uma única entrada. */
+export function generateDnaScreenReport(analysis: DnaAnalysis): string {
+  return generateDnaTerminalOutput([analysis]);
 }

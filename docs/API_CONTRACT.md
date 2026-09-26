@@ -3,7 +3,7 @@
 **Versão da Documentação:** 1.0.0  
 **Público-alvo:** Desenvolvedor(a) backend responsável pela implementação externa em Python (FastAPI).  
 **Fonte Primária de Verdade (Normativa):**  
-1. *BioCompiler 1.0* (`BioCompiler2.0/pdf_text_biocompiler1.txt`)  
+1. *BioCompiler 1.0 — DNA Transcriber — Especificação da Atividade* (`BioCompiler2.0/biocompiler/Especificações do BioCompiler 1.0 e slides.pdf`, seções 8, 9, 11 e 14; transcrição em `BioCompiler2.0/pdf_text_biocompiler1_v2.txt`), que substitui a versão/slide antigo.  
 2. *BioCompiler 2.0 RNA Processor — Especificação da Atividade* (`BioCompiler2.0/pdf_text_biocompiler2.txt`)  
 3. *Ribossomo Protein Translator — Especificação da Atividade* (`pdf_text.txt` / `4.4. Especificacao_Ribossomo_1_0_2026_2.pdf`)  
 **Fontes Secundárias (Implementação de Referência e Tipagem Frontend):**  
@@ -111,9 +111,10 @@ Recebe uma lista de fitas de DNA, valida o alfabeto canônico `{A, T, C, G}`, lo
       "entryNumber": 1,
       "rawSequence": "ATGGCTAAACCGTAA",
       "cleanSequence": "ATGGCTAAACCGTAA",
-      "status": "APROVADO",
+      "status": "CORRETO",
       "dnaCase": "CORRETO",
-      "detail": "Transcrição realizada",
+      "resultLabel": "CORRETO",
+      "detail": "CORRETO",
       "valid": true,
       "invalidBase": "",
       "invalidBasePosition": -1,
@@ -140,10 +141,11 @@ Recebe uma lista de fitas de DNA, valida o alfabeto canônico `{A, T, C, G}`, lo
 | `entryNumber` | `integer` | Índice ordinal da entrada no lote (base 1). |
 | `rawSequence` | `string` | Linha de DNA exatamente como submetida pelo cliente. |
 | `cleanSequence` | `string` | DNA após sanitização (maiúsculas, remoção de whitespaces/BOM). |
-| `status` | `string` (enum) | Rótulo literal do PDF (pág. 3): `"APROVADO"`, `"ERRO"` ou `"ALERTA"`. |
+| `status` | `string` (enum) | Status oficial (seção 9 do PDF oficial): `"CORRETO"` ou `"ERRO"` (`"APROVADO"` e `"ALERTA"` não existem mais). |
 | `dnaCase` | `string` (enum) | Identificador canônico do caso: `"CORRETO"`, `"BASE_INVALIDA"`, `"START_AUSENTE"`, `"STOP_AUSENTE"`, `"FRAMESHIFT"`, `"NONSENSE"`. |
-| `detail` | `string` | Texto literal da coluna "Detalhe" do PDF: `"Transcrição realizada"`, `"Base inválida: <base>"`, `"START (ATG) não encontrado"`, `"STOP não encontrado"`, `"Frameshift detectado"`, `"STOP prematuro (nonsense)"`. |
-| `valid` | `boolean` | `true` exclusivamente quando `status == "APROVADO"` (`dnaCase == "CORRETO"`). |
+| `resultLabel` | `string` (enum) | Texto exato da coluna "Resposta esperada" (seção 8 do PDF) e campo `TIPO` da saída em tela (seção 14): `"CORRETO"`, `"BUG - base inválida"`, `"BUG - START ausente"`, `"BUG - STOP ausente"`, `"BUG - frameshift"`, `"BUG - nonsense / STOP prematuro"`. |
+| `detail` | `string` | Mantido por compatibilidade; possui exatamente o mesmo texto de `resultLabel`. |
+| `valid` | `boolean` | `true` exclusivamente quando `status == "CORRETO"` (`dnaCase == "CORRETO"`). |
 | `invalidBase` | `string` | Caractere espúrio detectado fora de `{A, T, C, G}`, ou `""` se ausente. |
 | `invalidBasePosition` | `integer` | Posição humana (1-indexed) da base inválida, ou `-1` se não aplicável. |
 | `startValid` | `boolean` | `true` se o códon `ATG` foi localizado na fita. |
@@ -442,16 +444,77 @@ As tabelas a seguir estabelecem as strings literais normativas extraídas direta
 
 ### 4.1 Fase I — BioCompiler 1.0 (DNA Transcriber)
 
-> **Regra Normativa (PDF pág. 3):** Os rótulos oficiais de status são `APROVADO`, `ERRO` e `ALERTA`. A coluna `Detalhe` contém a descrição exata da condição diagnóstica.
+> **Regra Normativa (PDF seções 8, 9, 11 e 14):** Fonte primária oficial: *"BioCompiler2.0/biocompiler/Especificações do BioCompiler 1.0 e slides.pdf"*. O campo `status` é estritamente binário (`CORRETO` ou `ERRO`), extinguindo os antigos rótulos `APROVADO` e `ALERTA`. O campo `valid` é `true` exclusivamente quando `status == "CORRETO"`. O campo `resultLabel` (e seu alias `detail`) reproduz a string literal exata da coluna "Resposta esperada" da Seção 8 do PDF oficial.
 
-| Precedência | Status Oficial | Detalhe Literal (PDF) | Condição Disparadora Precisa |
+| Precedência | Status Oficial | Resposta Esperada (`resultLabel` / `detail`) | Condição Disparadora Precisa |
 |:---:|:---:|---|---|
-| **1** | `ERRO` | `Base inválida: <X>` | Presença de pelo menos um caractere não pertencente ao alfabeto canônico `{A, T, C, G}` na sequência higienizada. Verificada antes de qualquer busca de códons. |
-| **2** | `ERRO` | `START (ATG) não encontrado` | Sequência não contém nenhuma ocorrência da substring `ATG`. Não há como iniciar a transcrição da CDS. |
-| **3** | `ALERTA` | `STOP prematuro (nonsense)` | A partir do primeiro `ATG`, existem **dois ou mais** códons STOP (`TAA`, `TAG` ou `TGA`) no mesmo quadro de leitura. O primeiro STOP interrompe a fita antes do esperado. |
-| **4** | `APROVADO` | `Transcrição realizada` | Existe o primeiro `ATG` e **exatamente um** STOP canônico em fase até o fim da CDS. Transcreve DNA → pré-mRNA (`T` → `U`). |
-| **5** | `ALERTA` | `Frameshift detectado` | Nenhum STOP em fase foi encontrado **e** o trecho restante a partir do `ATG` até o fim da sequência não é múltiplo de 3 (`(len - start_pos) % 3 != 0`). |
-| **6** | `ERRO` | `STOP não encontrado` | Nenhum STOP em fase foi encontrado **e** o trecho restante a partir do `ATG` fecha em trincas completas (`(len - start_pos) % 3 == 0`), mas nenhuma delas é STOP. |
+| **1** | `ERRO` | `BUG - base inválida` | Presença de pelo menos um caractere não pertencente ao alfabeto canônico `{A, T, C, G}` na sequência higienizada. Verificada antes de qualquer busca de códons. |
+| **2** | `ERRO` | `BUG - START ausente` | Sequência não contém nenhuma ocorrência da substring `ATG`. Não há como iniciar a transcrição da CDS. |
+| **3** | `ERRO` | `BUG - nonsense / STOP prematuro` | A partir do primeiro `ATG`, existem **dois ou mais** códons STOP (`TAA`, `TAG` ou `TGA`) no mesmo quadro de leitura. O primeiro STOP interrompe a fita antes do término esperado da região codificante, restando sequência após ele. |
+| **4** | `CORRETO` | `CORRETO` | Existe o primeiro `ATG` e **exatamente um** STOP canônico em fase até o fim da CDS. Transcreve DNA → pré-mRNA (`T` → `U`). |
+| **5** | `ERRO` | `BUG - frameshift` | Nenhum STOP em fase foi encontrado **e** o trecho restante a partir do `ATG` até o fim da sequência não é múltiplo de 3 (`(len - start_pos) % 3 != 0`), rompendo a organização em trincas segundo a convenção didática. |
+| **6** | `ERRO` | `BUG - STOP ausente` | Nenhum STOP em fase foi encontrado **e** o trecho restante a partir do `ATG` fecha em trincas completas (`(len - start_pos) % 3 == 0`), mas nenhuma delas é STOP. |
+
+#### 4.1.1 Saída Padrão para Tela / Terminal (PDF Seções 9 e 14)
+
+Conforme as seções 9 e 14 da especificação oficial, a saída exibida na tela do terminal segue uma estrutura visual padronizada:
+1. **Banner Inicial:** Exibido uma única vez no topo do processamento em lote, composto por 40 caracteres de igual (`=`), o título `BIOCOMPILER 1.0 - DNA TRANSCRIBER` e mais 40 caracteres de igual (`=`).
+2. **Bloco por Entrada:**
+   - **Caso Válido (`STATUS: CORRETO`):** Exibe as linhas `ENTRADA: <n>`, `STATUS: CORRETO`, `Bases: OK`, `START: ATG - OK`, `Quadro de leitura: OK`, `STOP: <códon> - OK` (indicando o códon de parada encontrado, ex.: `TAA`), `Transcrição: OK` e `pré-mRNA: <sequência transcrita>`.
+   - **Caso de Erro (`STATUS: ERRO`):** Exibe as linhas `ENTRADA: <n>`, `STATUS: ERRO`, `TIPO: <resultLabel>` (com a resposta esperada exata, ex.: `TIPO: BUG - base inválida`) e `pré-mRNA: NÃO GERADO`.
+3. **Delimitador de Bloco:** Cada entrada é finalizada por uma linha com exatamente 40 hífens (`----------------------------------------`).
+
+##### Exemplo Completo das 6 Entradas da Seção 14 do PDF Oficial
+
+Considerando o arquivo de entrada com as 6 sequências canônicas da Seção 14 do PDF:
+1. Linha 1: `ATGGCTAAACCGTAA` (Caso 1 — Entrada correta)
+2. Linha 2: `ATGGCTXAACCGTAA` (Caso 2 — Base inválida)
+3. Linha 3: `CCCGCTAAACCGTAA` (Caso 3 — START ausente)
+4. Linha 4: `ATGGCTAAACCGGGC` (Caso 4 — STOP ausente)
+5. Linha 5: `ATGGCTAAAACCGTAA` (Caso 5 — Frameshift)
+6. Linha 6: `ATGGCTTAACCGGGCTAA` (Caso 6 — Nonsense / STOP prematuro)
+
+A saída no terminal gerada pelo processamento desse lote é:
+
+```text
+========================================
+BIOCOMPILER 1.0 - DNA TRANSCRIBER
+========================================
+ENTRADA: 1
+STATUS: CORRETO
+Bases: OK
+START: ATG - OK
+Quadro de leitura: OK
+STOP: TAA - OK
+Transcrição: OK
+pré-mRNA: AUGGCUAAACCGUAA
+----------------------------------------
+ENTRADA: 2
+STATUS: ERRO
+TIPO: BUG - base inválida
+pré-mRNA: NÃO GERADO
+----------------------------------------
+ENTRADA: 3
+STATUS: ERRO
+TIPO: BUG - START ausente
+pré-mRNA: NÃO GERADO
+----------------------------------------
+ENTRADA: 4
+STATUS: ERRO
+TIPO: BUG - STOP ausente
+pré-mRNA: NÃO GERADO
+----------------------------------------
+ENTRADA: 5
+STATUS: ERRO
+TIPO: BUG - frameshift
+pré-mRNA: NÃO GERADO
+----------------------------------------
+ENTRADA: 6
+STATUS: ERRO
+TIPO: BUG - nonsense / STOP prematuro
+pré-mRNA: NÃO GERADO
+----------------------------------------
+```
 
 ---
 
@@ -490,7 +553,7 @@ As tabelas a seguir estabelecem as strings literais normativas extraídas direta
 
 ### 5.1 Fase I — DNA (`POST /api/dna`)
 
-#### Exemplo 1: Sucesso (`CORRETO` / `APROVADO`)
+#### Exemplo 1: Sucesso (`CORRETO`)
 **Request:**
 ```json
 {
@@ -508,9 +571,10 @@ As tabelas a seguir estabelecem as strings literais normativas extraídas direta
       "entryNumber": 1,
       "rawSequence": "ATGGCTAAACCGTAA",
       "cleanSequence": "ATGGCTAAACCGTAA",
-      "status": "APROVADO",
+      "status": "CORRETO",
       "dnaCase": "CORRETO",
-      "detail": "Transcrição realizada",
+      "resultLabel": "CORRETO",
+      "detail": "CORRETO",
       "valid": true,
       "invalidBase": "",
       "invalidBasePosition": -1,
@@ -550,7 +614,8 @@ As tabelas a seguir estabelecem as strings literais normativas extraídas direta
       "cleanSequence": "ATGGCTXAACCGTAA",
       "status": "ERRO",
       "dnaCase": "BASE_INVALIDA",
-      "detail": "Base inválida: X",
+      "resultLabel": "BUG - base inválida",
+      "detail": "BUG - base inválida",
       "valid": false,
       "invalidBase": "X",
       "invalidBasePosition": 7,
@@ -831,14 +896,17 @@ O frontend possui um mecanismo transparente de contingência implementado em `fr
 
 As especificações definem padrões específicos para exportação de relatórios em disco. Todos os arquivos utilizam codificação **UTF-8**, uma linha de cabeçalho e registros delimitados por **ponto e vírgula (`;`)**.
 
-### 7.1 Fase I — BioCompiler 1.0
-- **Cabeçalho:** `linha;status;detalhe;pre_mRNA`
-- **Padrão de linha:** `<número>;<OK|ERRO>;<detalhe_literal>;<pre_mrna_ou_NÃO GERADO>`
-- **Exemplo:**
+### 7.1 Fase I — BioCompiler 1.0 (PDF Seção 11)
+- **Cabeçalho literal:** `linha;status;resultado;pre_mRNA`
+- **Padrão de linha:** `<número>;<OK|ERRO>;<resultado_literal>;<pre_mrna_ou_NÃO GERADO>`
+- **Coluna status:** `OK` (quando válido) ou `ERRO` (quando com falha biológica ou sintática).
+- **Coluna resultado:** `resultLabel` literal oficial da Seção 8 do PDF.
+- **Exemplo oficial do PDF (Seção 11):**
   ```csv
-  linha;status;detalhe;pre_mRNA
-  1;OK;Transcrição realizada;AUGGCUAAACCGUAA
-  2;ERRO;Base inválida: X;NÃO GERADO
+  linha;status;resultado;pre_mRNA
+  1;OK;CORRETO;AUGGCUAAACCGUAA
+  2;ERRO;BUG - base inválida;NÃO GERADO
+  3;ERRO;BUG - START ausente;NÃO GERADO
   ```
 
 ### 7.2 Fase II — BioCompiler 2.0 (PDF Seção 11)
@@ -888,19 +956,24 @@ Por determinação do projeto acadêmico, os PDFs constituem a fonte primária d
    - *PDF:* A saída de tela da seção 9 não contém a contagem de íntrons removidos.
    - *Código Legado:* Inclui a linha `"Íntrons removidos: <n>"`.
    - *Resolução:* Não faz parte do formato oficial de saída em tela. O dado é encapsulado no campo estruturado `introns` (tamanho do array) da API, permanecendo omitido do relatório literal canônico.
-3. **Fase I — Rótulos de Status (`APROVADO/ERRO/ALERTA` vs `CORRETO/ERRO`):**
-   - *PDF:* A tabela da pág. 3 ("FORMATO DA SAIDA") define `Status` como `APROVADO`, `ERRO` e `ALERTA`, acompanhados de uma coluna explicativa `Detalhe`.
-   - *Código Legado:* Utiliza `STATUS: CORRETO/ERRO` e um campo `TIPO:`.
-   - *Resolução:* O contrato adota literalmente os status `APROVADO`, `ERRO` e `ALERTA` e os textos de `Detalhe` do PDF.
+3. **Fase I — Rótulos de Status e Diagnósticos (`Especificações do BioCompiler 1.0 e slides.pdf` vs. Slide Antigo):**
+   - *Especificação Oficial Mais Nova (Seções 8, 9, 11 e 14):* O PDF oficial mais novo estabelece o campo `status` estritamente como binário (`CORRETO` ou `ERRO`), extinguindo por completo os antigos rótulos de apresentação `APROVADO` e `ALERTA`. O campo `valid` é `true` exclusivamente quando `status == "CORRETO"`.
+   - *Coluna "Resposta esperada" e campo `resultLabel`:* A Seção 8 define os 6 diagnósticos literais canônicos (`CORRETO`, `BUG - base inválida`, `BUG - START ausente`, `BUG - STOP ausente`, `BUG - frameshift`, `BUG - nonsense / STOP prematuro`), que são entregues pela API no campo `resultLabel` (e replicados em `detail` por compatibilidade).
+   - *Arquivo exportado:* A Seção 11 estabelece o cabeçalho padronizado `linha;status;resultado;pre_mRNA`, com a coluna `status` preenchida com `OK` ou `ERRO`, a coluna `resultado` recebendo o `resultLabel` literal e a coluna `pre_mRNA` recebendo o transcrito ou `"NÃO GERADO"`.
+   - *Resolução:* O contrato e a implementação do frontend adotam integralmente o padrão da nova especificação oficial.
 4. **Fase I — Ordem de Precedência entre Frameshift e Nonsense:**
    - *PDF:* Apresenta os 6 casos conceitualmente, sem pseudocódigo formal de precedência.
    - *Código Legado:* Implementa ordem determinística estrita: `base inválida` → `START ausente` → `>1 stop no frame (nonsense)` → `1 stop no frame (correto)` → `0 stops e resto!=0 (frameshift)` → `0 stops e resto==0 (stop ausente)`.
    - *Resolução:* Como o PDF é omisso quanto à precedência algorítmica, adota-se a precedência determinística do código como desempate técnico (conforme a Seção 4.1).
-5. **Fase I — Exemplos 4 (STOP ausente) e 6 (Nonsense) nos Slides do PDF vs. Regras Algorítmicas:**
-   - *Constatação:* Uma checagem minuciosa da imagem original do PDF de slides da Fase I confirmou que a transcrição está correta e que o próprio PDF se contradiz entre as sequências apresentadas e as legendas explicativas do slide:
-     - No **Caso 4** (`GCGTAC ATG GCTAACGTTG GCTGAACTTC GGCTACGCGT`), ao agrupar em trincas a partir do `ATG` (`ATG GCT AAC GTT GGC TGA ACT TCG GCT ACG CGT`), há um `TGA` perfeitamente em fase no códon 6. Logo, a regra formal classifica a sequência como gene íntegro válido (`APROVADO` / `CORRETO`).
-     - No **Caso 6** (`GCGTAC ATG GCTAACGTTG TAA GAACTTC GGCTAC TGA`), o códon `TAA` inserido ocorre na posição 10 após o `ATG` (`ATG GCT AAC GTT G TAA...`). Como 10 não é múltiplo de 3, sobra um `G` antes do `TAA`, quebrando a matriz de leitura. Consequentemente, o motor classifica a sequência como `ALERTA` / `Frameshift detectado`, e não nonsense.
-   - *Resolução:* O motor de execução e este contrato permanecem estritamente fiéis às regras formais de biologia computacional e leitura em trincas, em vez de criar exceções artificiais para forçar concordância com legendas contraditórias de slides ilustrativos.
+5. **Fase I — Exemplos Canônicos da Seção 14 da Nova Especificação:**
+   - *Constatação:* Nos slides ilustrativos antigos, os exemplos visuais de STOP ausente e Nonsense continham contradições de trincas na diagramação. A nova especificação oficial ("Especificações do BioCompiler 1.0 e slides.pdf", Seção 14) fixou as 6 sequências canônicas de teste e suas respectivas saídas em terminal e arquivo:
+     - Caso 1 (`CORRETO`): `ATGGCTAAACCGTAA`
+     - Caso 2 (`BUG - base inválida`): `ATGGCTXAACCGTAA`
+     - Caso 3 (`BUG - START ausente`): `CCCGCTAAACCGTAA`
+     - Caso 4 (`BUG - STOP ausente`): `ATGGCTAAACCGGGC` (fechamento exato em trincas sem STOP)
+     - Caso 5 (`BUG - frameshift`): `ATGGCTAAAACCGTAA` (comprimento 16, sobra de bases fora de trincas)
+     - Caso 6 (`BUG - nonsense / STOP prematuro`): `ATGGCTTAACCGGGCTAA` (dois códons STOP `TAA` em fase)
+   - *Resolução:* O algoritmo determinístico e as suítes de teste utilizam essas 6 sequências padronizadas.
 6. **Fase III — Desconto de Adeninas de Códons STOP na Validação da Cauda Poli-A:**
    - *Problema:* A Seção 7 do PDF exige rigorosamente "exatamente 100 adeninas (A) consecutivas na extremidade 3'". Quando o códon STOP em fase termina em adeninas (notadamente `UAA`, com duas adeninas finais, ou `UGA`, com uma adenina final), uma contagem ingênua de adeninas terminais (`A+$`) captura 102 ou 101 bases consecutivas, disparando erroneamente `BUG - cauda poli -A` em sequências válidas cuja cauda adicionada possui exatamente 100 As.
    - *Resolução:* Quando o excedente de adeninas (1 ou 2 bases) corresponde comprovadamente aos nucleotídeos terminais do códon STOP em fase (`UAA` ou `UGA`) imediatamente anterior à cauda, essas bases pertencem à região codificante (CDS) e são desconsideradas no cômputo da cauda. O comprimento da cauda poli-A é reconhecido como exatamente 100 As, validando a sequência como `CORRETO`.
@@ -917,11 +990,11 @@ Por determinação do projeto acadêmico, os PDFs constituem a fonte primária d
 
 | Item | Identificador | Situação / Descrição | Ação Recomendada |
 |---|---|---|---|
-| **1** | `PENDENTE_FASE1_EXPORT` | O PDF da Fase I (BioCompiler 1.0) omite a especificação de layout para arquivo exportado em disco (define apenas a tabela de tela). | **PENDENTE:** O frontend padronizou como `linha;status;detalhe;pre_mRNA`. Maestro deve confirmar se esse cabeçalho é aceito pelo avaliador ou se prefere `linha;status;resultado;pre_mRNA`. |
+| **1** | `PENDENTE_FASE1_EXPORT` | Resolvido pela Seção 11 do PDF oficial mais novo ("Especificações do BioCompiler 1.0 e slides.pdf"). | **RESOLVIDA:** Cabeçalho normatizado como `linha;status;resultado;pre_mRNA`, status `OK/ERRO`, resultado = `resultLabel` literal e transcrito ou `"NÃO GERADO"`. |
 | **2** | `PENDENTE_SPLICING_MULTI_INTRON` | O PDF da Fase II descreve didaticamente a remoção de um íntron: `EXON1 [GU ... A ... AG] EXON2`. O motor do código realiza splicing iterativo até esgotar todos os íntrons válidos. | **PENDENTE:** Definir se o backend Python deve obrigatoriamente suportar splicing iterativo de múltiplos íntrons na mesma sequência ou apenas um íntron por fita. |
 | **3** | `PENDENTE_RATE_LIMIT_AUTH` | Autenticação, rate limiting e quotas de requisição. | **PENDENTE:** Atualmente não há requisitos de autenticação (API aberta em localhost). Confirmar se permanecerá sem tokens/chaves para a entrega acadêmica. |
 
 ### Perguntas Abertas para o Maestro (Open Questions)
 
-1. **Padronização do CSV da Fase I:** `RESOLVIDA`. Confirmado: a exportação de arquivo da Fase I utiliza na coluna `status` o valor binário `OK/ERRO` (como implementado por `generateDnaExportContent`), e não os rótulos de apresentação em tela `APROVADO/ERRO/ALERTA`. O campo JSON `status` da API segue entregando `APROVADO/ERRO/ALERTA` para a interface.
+1. **Padronização do CSV da Fase I:** `RESOLVIDA`. A Seção 11 do PDF oficial mais novo normatizou o cabeçalho `linha;status;resultado;pre_mRNA`, com a coluna `status` como `OK/ERRO` e a coluna `resultado` recebendo o `resultLabel` literal. No JSON da API, o campo `status` é `"CORRETO"` ou `"ERRO"`.
 2. **Espaçamento da Cauda Poli-A na Fase III:** `RESOLVIDA`. Decisão do Maestro: Manter rigorosamente o literal do PDF com espaço antes do hífen: `"BUG - cauda poli -A"`. O frontend, o backend e este contrato adotam essa grafia exata.
