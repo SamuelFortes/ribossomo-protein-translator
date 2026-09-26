@@ -1,6 +1,6 @@
-import { useState } from 'react';
-import { Copy, Check, Download } from 'lucide-react';
+import { Download } from 'lucide-react';
 import { downloadText } from './downloadText';
+import CopyButton from './CopyButton';
 
 interface TerminalWindowProps {
   title: string;
@@ -11,18 +11,6 @@ interface TerminalWindowProps {
 }
 
 export default function TerminalWindow({ title, command, output, downloadFileName }: TerminalWindowProps) {
-  const [copied, setCopied] = useState(false);
-
-  const handleCopy = async () => {
-    try {
-      await navigator.clipboard.writeText(output);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1500);
-    } catch {
-      setCopied(false);
-    }
-  };
-
   const handleDownload = () => {
     if (!downloadFileName) return;
     downloadText(`${output}\n`, downloadFileName);
@@ -33,14 +21,7 @@ export default function TerminalWindow({ title, command, output, downloadFileNam
       <div className="flex items-center justify-between border-b border-slate-800 bg-slate-900 px-3 py-2">
         <span className="truncate font-mono text-[11px] text-slate-300">{title}</span>
         <div className="flex items-center gap-3">
-          <button
-            onClick={handleCopy}
-            aria-label="Copiar saída do terminal"
-            className="flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] text-slate-400 transition hover:bg-slate-800 hover:text-slate-200"
-          >
-            {copied ? <Check size={11} className="text-emerald-400" /> : <Copy size={11} />}
-            {copied ? 'Copiado' : 'Copiar saída'}
-          </button>
+          <CopyButton text={output} label="Copiar saída" />
           {downloadFileName && (
             <button
               onClick={handleDownload}

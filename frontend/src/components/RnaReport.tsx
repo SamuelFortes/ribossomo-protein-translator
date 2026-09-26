@@ -1,5 +1,6 @@
 import { CheckCircle2, XCircle, AlertTriangle, BookOpen } from 'lucide-react';
 import type { RnaAnalysis } from '../types';
+import CopyButton from './CopyButton';
 
 interface RnaReportProps {
   analysis: RnaAnalysis;
@@ -89,7 +90,10 @@ export default function RnaReport({ analysis }: RnaReportProps) {
         <StatusRow label="Cauda poli-A" ok={analysis.polyATailLength > 0} detail={`${analysis.polyATailLength} A`} />
 
         <div className="mt-3 rounded-lg bg-slate-950/60 p-3">
-          <div className="text-[10px] uppercase tracking-widest text-slate-500">mRNA maduro</div>
+          <div className="flex items-center justify-between gap-2">
+            <div className="text-[10px] uppercase tracking-widest text-slate-500">mRNA maduro</div>
+            {isOk && <CopyButton text={analysis.matureMrna} label="Copiar mRNA maduro" />}
+          </div>
           <div className={`mt-1 break-all font-mono text-sm font-bold ${isOk ? 'text-emerald-300' : 'text-rose-400'}`}>
             {analysis.matureMrna}
           </div>

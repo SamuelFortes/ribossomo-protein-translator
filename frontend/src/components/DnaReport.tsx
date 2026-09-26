@@ -1,6 +1,7 @@
 import { CheckCircle2, XCircle, AlertTriangle, BookOpen } from 'lucide-react';
 import type { DnaAnalysis } from '../types';
 import SequenceRuler from './SequenceRuler';
+import CopyButton from './CopyButton';
 
 interface DnaReportProps {
   analysis: DnaAnalysis;
@@ -79,7 +80,10 @@ export default function DnaReport({ analysis }: DnaReportProps) {
         </div>
 
         <div className="mt-3 rounded-lg bg-slate-950/60 p-3">
-          <div className="text-[10px] uppercase tracking-widest text-slate-500">pré-mRNA</div>
+          <div className="flex items-center justify-between gap-2">
+            <div className="text-[10px] uppercase tracking-widest text-slate-500">pré-mRNA</div>
+            {analysis.valid && <CopyButton text={analysis.preMrna} label="Copiar pré-mRNA" />}
+          </div>
           <div className={`mt-1 break-all font-mono text-sm font-bold ${analysis.valid ? 'text-emerald-300' : 'text-rose-400'}`}>
             {analysis.preMrna}
           </div>

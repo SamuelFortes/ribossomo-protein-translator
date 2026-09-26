@@ -1,6 +1,7 @@
 import { CheckCircle2, XCircle, AlertTriangle, BookOpen } from 'lucide-react';
 import type { RibosomeAnalysis } from '../types';
 import { NUCLEOTIDE_COLORS } from '../utils/geneticCode';
+import CopyButton from './CopyButton';
 
 interface AnalysisReportProps {
   analysis: RibosomeAnalysis;
@@ -99,7 +100,10 @@ export default function AnalysisReport({ analysis }: AnalysisReportProps) {
         </div>
 
         <div className="mt-3 rounded-lg bg-slate-950/60 p-3">
-          <div className="text-[10px] uppercase tracking-widest text-slate-500">Proteína</div>
+          <div className="flex items-center justify-between gap-2">
+            <div className="text-[10px] uppercase tracking-widest text-slate-500">Proteína</div>
+            {isOk && <CopyButton text={analysis.protein} label="Copiar proteína" />}
+          </div>
           <div className={`mt-1 break-all font-mono text-sm font-bold ${isOk ? 'text-emerald-300' : 'text-rose-400'}`}>
             {analysis.protein}
           </div>
