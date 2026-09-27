@@ -49,7 +49,7 @@ export default function RibosomePanel({ analysis }: RibosomePanelProps) {
 
   return (
     <div className="flex h-full flex-col gap-3">
-      <div className="relative flex-1 overflow-hidden rounded-2xl border border-slate-800 bg-slate-950/60">
+      <div className="relative flex-1 overflow-hidden rounded-2xl border border-slate-200 bg-slate-100/60 dark:border-slate-800 dark:bg-slate-950/60">
         {codons.length > 0 ? (
           <RibosomeScene codons={codons} currentStep={step} />
         ) : (
@@ -60,27 +60,27 @@ export default function RibosomePanel({ analysis }: RibosomePanelProps) {
         )}
 
         {currentCodon && (
-          <div className="pointer-events-none absolute left-3 top-3 rounded-lg border border-cyan-500/30 bg-slate-950/80 px-3 py-2 backdrop-blur">
-            <div className="text-[10px] uppercase tracking-widest text-cyan-400">Códon atual</div>
-            <div className="font-mono text-lg font-bold text-slate-100">{currentCodon.codon}</div>
-            <div className="text-xs text-slate-400">{currentCodon.name}</div>
+          <div className="pointer-events-none absolute left-3 top-3 rounded-lg border border-cyan-500/30 bg-white/80 px-3 py-2 backdrop-blur dark:bg-slate-950/80">
+            <div className="text-[10px] uppercase tracking-widest text-cyan-700 dark:text-cyan-400">Códon atual</div>
+            <div className="font-mono text-lg font-bold text-slate-900 dark:text-slate-100">{currentCodon.codon}</div>
+            <div className="text-xs text-slate-500 dark:text-slate-400">{currentCodon.name}</div>
           </div>
         )}
       </div>
 
       {codons.length > 0 && (
         <>
-          <div className="flex items-center gap-2 rounded-xl border border-slate-800 bg-slate-900/60 p-3">
+          <div className="flex flex-wrap items-center gap-2 rounded-xl border border-slate-200 bg-slate-100/60 p-3 dark:border-slate-800 dark:bg-slate-900/60">
             <button
               onClick={() => setStep(0)}
-              className="rounded-lg p-2 text-slate-400 transition hover:bg-slate-800 hover:text-slate-100"
+              className="rounded-lg p-2 text-slate-500 transition hover:bg-slate-200 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-100"
               title="Reiniciar"
             >
               <RotateCcw size={16} />
             </button>
             <button
               onClick={() => setStep((s) => Math.max(0, s - 1))}
-              className="rounded-lg p-2 text-slate-400 transition hover:bg-slate-800 hover:text-slate-100"
+              className="rounded-lg p-2 text-slate-500 transition hover:bg-slate-200 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-100"
               title="Passo anterior"
             >
               <SkipBack size={16} />
@@ -94,7 +94,7 @@ export default function RibosomePanel({ analysis }: RibosomePanelProps) {
             </button>
             <button
               onClick={() => setStep((s) => Math.min(maxStep, s + 1))}
-              className="rounded-lg p-2 text-slate-400 transition hover:bg-slate-800 hover:text-slate-100"
+              className="rounded-lg p-2 text-slate-500 transition hover:bg-slate-200 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-100"
               title="Próximo passo"
             >
               <SkipForward size={16} />
@@ -106,16 +106,16 @@ export default function RibosomePanel({ analysis }: RibosomePanelProps) {
               max={maxStep}
               value={step}
               onChange={(e) => setStep(Number(e.target.value))}
-              className="mx-2 flex-1 accent-cyan-500"
+              className="mx-2 min-w-[80px] flex-1 accent-cyan-500"
             />
 
-            <div className="flex items-center gap-1 text-xs text-slate-400">
+            <div className="flex items-center gap-1 text-xs text-slate-500 dark:text-slate-400">
               {[0.5, 1, 2].map((s) => (
                 <button
                   key={s}
                   onClick={() => setSpeed(s)}
                   className={`rounded-md px-2 py-1 font-mono transition ${
-                    speed === s ? 'bg-cyan-500/20 text-cyan-300' : 'hover:bg-slate-800'
+                    speed === s ? 'bg-cyan-500/20 text-cyan-700 dark:text-cyan-300' : 'hover:bg-slate-200 dark:hover:bg-slate-800'
                   }`}
                 >
                   {s}x
@@ -125,8 +125,8 @@ export default function RibosomePanel({ analysis }: RibosomePanelProps) {
           </div>
 
           {currentCodon && (
-            <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-3 text-xs leading-relaxed text-slate-300">
-              <span className="mr-1 font-semibold text-emerald-400">Passo {step + 1}/{codons.length}:</span>
+            <div className="rounded-xl border border-slate-200 bg-slate-100/60 p-3 text-xs leading-relaxed text-slate-600 dark:border-slate-800 dark:bg-slate-900/60 dark:text-slate-300">
+              <span className="mr-1 font-semibold text-emerald-600 dark:text-emerald-400">Passo {step + 1}/{codons.length}:</span>
               {STEP_EXPLANATIONS[currentCodon.type]}
             </div>
           )}

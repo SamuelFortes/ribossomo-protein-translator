@@ -53,8 +53,24 @@ export const GENETIC_CODE: Record<string, string> = {
 export const STOP_CODONS = new Set(['UAA', 'UAG', 'UGA']);
 
 export const NUCLEOTIDE_COLORS: Record<string, { bg: string; text: string; name: string }> = {
-  A: { bg: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40', text: 'text-emerald-400', name: 'Adenina' },
-  U: { bg: 'bg-rose-500/20 text-rose-400 border-rose-500/40', text: 'text-rose-400', name: 'Uracila' },
-  G: { bg: 'bg-amber-500/20 text-amber-400 border-amber-500/40', text: 'text-amber-400', name: 'Guanina' },
-  C: { bg: 'bg-cyan-500/20 text-cyan-400 border-cyan-500/40', text: 'text-cyan-400', name: 'Citosina' },
+  A: {
+    bg: 'bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 border-emerald-500/40',
+    text: 'text-emerald-700 dark:text-emerald-400',
+    name: 'Adenina',
+  },
+  U: {
+    bg: 'bg-rose-500/20 text-rose-700 dark:text-rose-400 border-rose-500/40',
+    text: 'text-rose-700 dark:text-rose-400',
+    name: 'Uracila',
+  },
+  G: {
+    bg: 'bg-amber-500/20 text-amber-700 dark:text-amber-400 border-amber-500/40',
+    text: 'text-amber-700 dark:text-amber-400',
+    name: 'Guanina',
+  },
+  C: {
+    bg: 'bg-cyan-500/20 text-cyan-700 dark:text-cyan-400 border-cyan-500/40',
+    text: 'text-cyan-700 dark:text-cyan-400',
+    name: 'Citosina',
+  },
 };

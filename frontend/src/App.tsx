@@ -135,7 +135,7 @@ function App() {
   const pipelineSelected = pipelineSelectedIndex !== null ? pipelineResults[pipelineSelectedIndex] : null;
 
   return (
-    <div className="min-h-screen bg-slate-950">
+    <div className="min-h-screen bg-white dark:bg-slate-950">
       <Header
         mode={mode}
         onModeChange={setMode}
@@ -170,7 +170,7 @@ function App() {
               {selected ? (
                 <AnalysisReport analysis={selected} />
               ) : (
-                <div className="flex h-full min-h-[300px] items-center justify-center rounded-2xl border border-dashed border-slate-800 p-6 text-center text-sm text-slate-500">
+                <div className="flex h-full min-h-[300px] items-center justify-center rounded-2xl border border-dashed border-slate-300 p-6 text-center text-sm text-slate-500 dark:border-slate-800">
                   Cole ou carregue uma sequência de mRNA e clique em "Traduzir" para ver o relatório detalhado da
                   tradução.
                 </div>
@@ -198,12 +198,14 @@ function App() {
 
             <div className="flex flex-col gap-4 lg:col-span-8">
               {dnaResults.length > 0 && (
-                <div className="flex gap-1 rounded-xl border border-slate-800 bg-slate-900/50 p-1 text-xs font-semibold">
+                <div className="flex gap-1 rounded-xl border border-slate-200 bg-slate-100/50 p-1 text-xs font-semibold dark:border-slate-800 dark:bg-slate-900/50">
                   <button
                     onClick={() => setDnaViewTab('report')}
                     aria-pressed={dnaViewTab === 'report'}
                     className={`flex-1 rounded-lg px-3 py-1.5 transition ${
-                      dnaViewTab === 'report' ? 'bg-cyan-500/20 text-cyan-300' : 'text-slate-400 hover:text-slate-200'
+                      dnaViewTab === 'report'
+                        ? 'bg-cyan-500/20 text-cyan-700 dark:text-cyan-300'
+                        : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200'
                     }`}
                   >
                     Relatório
@@ -212,7 +214,9 @@ function App() {
                     onClick={() => setDnaViewTab('terminal')}
                     aria-pressed={dnaViewTab === 'terminal'}
                     className={`flex-1 rounded-lg px-3 py-1.5 transition ${
-                      dnaViewTab === 'terminal' ? 'bg-cyan-500/20 text-cyan-300' : 'text-slate-400 hover:text-slate-200'
+                      dnaViewTab === 'terminal'
+                        ? 'bg-cyan-500/20 text-cyan-700 dark:text-cyan-300'
+                        : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200'
                     }`}
                   >
                     Terminal
@@ -221,7 +225,7 @@ function App() {
               )}
 
               {dnaResults.length === 0 && (
-                <div className="flex h-full min-h-[300px] items-center justify-center rounded-2xl border border-dashed border-slate-800 p-6 text-center text-sm text-slate-500">
+                <div className="flex h-full min-h-[300px] items-center justify-center rounded-2xl border border-dashed border-slate-300 p-6 text-center text-sm text-slate-500 dark:border-slate-800">
                   Cole ou carregue uma sequência de DNA e clique em "Transcrever" para ver o relatório da Fase I
                   (BioCompiler 1.0).
                 </div>
@@ -262,7 +266,7 @@ function App() {
               {rnaSelected ? (
                 <RnaReport analysis={rnaSelected} />
               ) : (
-                <div className="flex h-full min-h-[300px] items-center justify-center rounded-2xl border border-dashed border-slate-800 p-6 text-center text-sm text-slate-500">
+                <div className="flex h-full min-h-[300px] items-center justify-center rounded-2xl border border-dashed border-slate-300 p-6 text-center text-sm text-slate-500 dark:border-slate-800">
                   Cole ou carregue uma sequência de pré-mRNA e clique em "Processar" para ver o relatório da Fase
                   II (BioCompiler 2.0).
                 </div>
@@ -292,7 +296,7 @@ function App() {
               {pipelineSelected ? (
                 <PipelineView analysis={pipelineSelected} />
               ) : (
-                <div className="flex h-full min-h-[300px] items-center justify-center rounded-2xl border border-dashed border-slate-800 p-6 text-center text-sm text-slate-500">
+                <div className="flex h-full min-h-[300px] items-center justify-center rounded-2xl border border-dashed border-slate-300 p-6 text-center text-sm text-slate-500 dark:border-slate-800">
                   Cole ou carregue uma sequência de DNA e clique em "Executar Pipeline" para encadear as três
                   fases (DNA → pré-mRNA → mRNA maduro → proteína) numa única execução.
                 </div>
@@ -302,9 +306,9 @@ function App() {
         )}
       </main>
 
-      <footer className="border-t border-slate-800 px-4 py-4 text-center text-[11px] text-slate-600">
+      <footer className="border-t border-slate-200 px-4 py-4 text-center text-[11px] text-slate-500 dark:border-slate-800 dark:text-slate-600">
         BioCompiler - Protein Translator · Frontend educacional · Modo atual:{' '}
-        <span className="text-slate-400">{mode === 'client' ? 'Simulação Local (Client Engine)' : 'Python API'}</span>
+        <span className="text-slate-600 dark:text-slate-400">{mode === 'client' ? 'Simulação Local (Client Engine)' : 'Python API'}</span>
       </footer>
 
       <ApiContractModal open={contractOpen} onClose={() => setContractOpen(false)} />

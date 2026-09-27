@@ -14,21 +14,21 @@ interface SequenceRulerProps {
 }
 
 const REGION_LETTER: Record<Region, string> = {
-  invalid: 'bg-rose-500/30 text-rose-300 font-bold ring-1 ring-rose-500/50',
-  nostart: 'text-rose-400',
-  before: 'text-slate-500',
-  cds: 'bg-emerald-500/20 text-emerald-300 font-semibold',
-  'cds-invalid': 'bg-amber-500/20 text-amber-300 font-semibold',
-  after: 'text-slate-500',
+  invalid: 'bg-rose-500/30 text-rose-700 dark:text-rose-300 font-bold ring-1 ring-rose-500/50',
+  nostart: 'text-rose-600 dark:text-rose-400',
+  before: 'text-slate-400 dark:text-slate-500',
+  cds: 'bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 font-semibold',
+  'cds-invalid': 'bg-amber-500/20 text-amber-700 dark:text-amber-300 font-semibold',
+  after: 'text-slate-400 dark:text-slate-500',
 };
 
 const REGION_CHIP: Record<Region, string> = {
-  invalid: 'border-rose-500/50 bg-rose-500/20 text-rose-300',
-  nostart: 'border-rose-500/20 bg-rose-500/10 text-rose-400/80',
-  before: 'border-slate-700/40 bg-slate-800/60 text-slate-600',
-  cds: 'border-emerald-500/30 bg-emerald-500/10 text-emerald-400',
-  'cds-invalid': 'border-amber-500/30 bg-amber-500/10 text-amber-400',
-  after: 'border-slate-700/40 bg-slate-800/60 text-slate-600',
+  invalid: 'border-rose-500/50 bg-rose-500/20 text-rose-700 dark:text-rose-300',
+  nostart: 'border-rose-500/30 bg-rose-500/10 text-rose-600/80 dark:border-rose-500/20 dark:text-rose-400/80',
+  before: 'border-slate-300/60 bg-slate-200/60 text-slate-500 dark:border-slate-700/40 dark:bg-slate-800/60 dark:text-slate-600',
+  cds: 'border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400',
+  'cds-invalid': 'border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-400',
+  after: 'border-slate-300/60 bg-slate-200/60 text-slate-500 dark:border-slate-700/40 dark:bg-slate-800/60 dark:text-slate-600',
 };
 
 export default function SequenceRuler({
@@ -74,7 +74,7 @@ export default function SequenceRuler({
             className="flex w-7 flex-none flex-col items-center"
             style={{ marginRight: isCodonEnd ? '6px' : '2px' }}
           >
-            <span className="mb-0.5 h-3 font-mono text-[9px] leading-none text-slate-600">
+            <span className="mb-0.5 h-3 font-mono text-[9px] leading-none text-slate-400 dark:text-slate-600">
               {codonNumber ?? ''}
             </span>
             <span

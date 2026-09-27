@@ -27,11 +27,13 @@
   - [Fase II — BioCompiler 2.0 (pré-mRNA → mRNA maduro)](#fase-ii--biocompiler-20-pré-mrna--mrna-maduro)
   - [Fase III — Ribossomo 1.0 (mRNA maduro → Proteína)](#fase-iii--ribossomo-10-mrna-maduro--proteína)
   - [Modo Pipeline Unificado](#modo-pipeline-unificado)
+  - [Tema Claro/Escuro](#tema-claroescuro)
   - [Alternância de Execução e Fallback Transparente](#alternância-de-execução-e-fallback-transparente)
 - [Arquitetura e Estrutura do Projeto](#arquitetura-e-estrutura-do-projeto)
 - [Stack Tecnológica](#stack-tecnológica)
 - [Como Executar o Projeto](#como-executar-o-projeto)
 - [Integração com Backend Python (FastAPI)](#integração-com-backend-python-fastapi)
+- [Roteiro de Apresentação](#roteiro-de-apresentação)
 - [Especificações em PDF como Fonte da Verdade](#especificações-em-pdf-como-fonte-da-verdade)
 - [Interpretações Algorítmicas e Limitações Conhecidas](#interpretações-algorítmicas-e-limitações-conhecidas)
 - [Licença](#licença)
@@ -106,9 +108,17 @@ flowchart LR
 - **Parada Inteligente:** Se a Fase I ou a Fase II falharem, a fita é imediatamente interrompida no ponto de inconsistência com exibição do diagnóstico causador, marcando as etapas subsequentes como não executadas (`null`).
 - **Visão Comparativa:** Comparação direta entre fita de DNA molde, pré-mRNA transcrito, mRNA maduro processado e proteína traduzida.
 
+<a id="tema-claroescuro"></a>
+### Tema Claro/Escuro
+- **Alternância Imediata:** Botão sol/lua no cabeçalho (`Header.tsx`) alterna entre tema claro e escuro a qualquer momento, com toda a interface (incluindo a cena 3D do ribossomo) reagindo instantaneamente à troca.
+- **Preferência Inicial do Sistema:** Ao abrir o app pela primeira vez, o tema segue automaticamente `prefers-color-scheme` do sistema operacional/navegador.
+- **Persistência sem Flash:** A escolha do usuário é salva no `localStorage` e reaplicada em visitas futuras através de um script inline no `index.html`, executado antes da montagem do React — não há "flash" do tema errado ao carregar a página.
+
 ### Alternância de Execução e Fallback Transparente
-- **Chaveador Cliente / API:** O usuário pode alternar a qualquer momento entre o processador local em TypeScript e o backend Python via FastAPI (`http://localhost:8000/api`).
-- **Resiliência e Contingência:** Caso o backend Python não esteja em execução ou falhe na requisição de rede, o cliente captura a falha, executa o cálculo local de contingência instantaneamente e sinaliza o usuário via aviso em tela sem travar a interface.
+- **Chaveador Cliente / API:** O usuário pode alternar a qualquer momento entre o processador local em TypeScript ("Simulação Local") e o backend Python via FastAPI ("Python API", `http://localhost:8000/api`).
+- **Indicador de Backend:** Ao lado do seletor Simulação Local / Python API, um indicador "Backend: online/offline" consulta `GET /api/health` periodicamente e mostra o status em tempo real do backend Python — informativo apenas para a Fase III, hoje a única que de fato depende dele.
+- **Resiliência e Contingência (Fase III):** Caso o backend Python não esteja em execução ou falhe na requisição de rede ao traduzir um mRNA, o cliente captura a falha, executa o cálculo local de contingência instantaneamente e sinaliza o usuário via aviso em tela sem travar a interface.
+- **Fases I, II e Pipeline sempre locais:** como o backend atual implementa somente a Fase III (ver [Integração com Backend Python](#integração-com-backend-python-fastapi)), no modo "Python API" essas três fases rodam sempre o motor TypeScript local, sem tentativa de rede e sem aviso de contingência.
 - **Modal de Contrato:** Modal integrado com visualização e cópia rápida do contrato Pydantic/FastAPI esperado.
 
 ---
@@ -192,27 +202,28 @@ ribossomo-protein-translator/
 ### Pré-requisitos
 - [Node.js](https://nodejs.org/) versão **20.19+** ou **22.12+** (requisito do Vite 8)
 - Gerenciador de pacotes `npm` instalado
-- Python 3.11+ para executar o backend FastAPI do Ribossomo
+- **Python 3.11+** para executar o backend FastAPI do Ribossomo (opcional — o app funciona 100% em "Simulação Local" sem o backend)
 
-### Passo a Passo no Windows PowerShell
+### Passo a Passo no Windows PowerShell (Dois Terminais)
 
-1. Clone o repositório e navegue até a pasta `frontend`:
-   ```powershell
-   git clone https://github.com/SamuelFortes/ribossomo-protein-translator.git
-   cd ribossomo-protein-translator\frontend
-   ```
+O projeto roda em dois processos independentes: o backend FastAPI (Fase III) e o frontend Vite. Clone o repositório uma única vez e abra dois terminais PowerShell a partir da raiz do repositório.
 
-2. Instale as dependências:
-   ```powershell
-   npm install
-   ```
+> **Nota:** o PowerShell 5.1 não aceita o encadeamento `&&` do bash — use `;` entre comandos, como nos blocos abaixo.
 
-3. Inicie o servidor de desenvolvimento Vite:
-   ```powershell
-   npm run dev
-   ```
+**Terminal 1 — Backend (opcional, necessário só para testar a Fase III via "Python API"):**
+```powershell
+python -m pip install -r backend\requirements.txt
+python -m uvicorn backend.app.main:app --reload --host 127.0.0.1 --port 8000
+```
+O backend sobe em [http://127.0.0.1:8000](http://127.0.0.1:8000); a documentação interativa do FastAPI fica em [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs).
 
-4. Abra a URL informada no terminal em seu navegador (geralmente [http://localhost:5173](http://localhost:5173)).
+**Terminal 2 — Frontend:**
+```powershell
+cd frontend
+npm install
+npm run dev
+```
+Abra a URL informada no terminal em seu navegador (geralmente [http://localhost:5173](http://localhost:5173)).
 
 ### Scripts Disponíveis no `package.json`
 
@@ -227,20 +238,48 @@ ribossomo-protein-translator/
 
 ## Integração com Backend Python (FastAPI)
 
-Embora o frontend execute 100% de todas as validações e animações localmente, ele também pode consumir o backend Python em FastAPI disponível em `backend/`.
+Embora o frontend execute 100% de todas as validações e animações localmente, ele também pode consumir o backend Python em FastAPI disponível em `backend/`. **O backend atual implementa apenas a Fase III (Ribossomo)** — as Fases I, II e o Pipeline rodam sempre no motor TypeScript local, mesmo no modo "Python API" (ver [Alternância de Execução e Fallback Transparente](#alternância-de-execução-e-fallback-transparente)).
 
-- **Documentação Normativa:** O contrato completo de rotas, esquemas Pydantic, respostas JSON de exemplo e regras de contingência está documentado em [docs/API_CONTRACT.md](docs/API_CONTRACT.md).
+- **Documentação Normativa:** O contrato completo de rotas, esquemas Pydantic, respostas JSON de exemplo, o quadro de status de implementação por endpoint e as regras de contingência estão documentados em [docs/API_CONTRACT.md](docs/API_CONTRACT.md).
 - **Execução do backend Ribossomo:**
   ```powershell
   python -m pip install -r backend\requirements.txt
-  python -m uvicorn backend.app.main:app --reload --host 0.0.0.0 --port 8000
+  python -m uvicorn backend.app.main:app --reload --host 127.0.0.1 --port 8000
   ```
-- **Endpoints Mapeados:**
-  - `GET http://localhost:8000/api/health` — Verificação simples do serviço.
-  - `POST http://localhost:8000/api/translate` — Tradução ribossômica de mRNA maduro (Fase III).
-  - `POST http://localhost:8000/api/translate/export` — Exportação CSV no padrão oficial `linha;status;resultado;proteina`.
-  - `GET http://localhost:8000/api/translate/examples` — Casos oficiais da especificação do Ribossomo.
-  - `GET http://localhost:8000/api/translate/genetic-code` — Código genético, STOPs e metadados de aminoácidos para customização visual.
+- **Documentação Interativa:** com o backend rodando, o Swagger UI gerado automaticamente pelo FastAPI fica disponível em [http://localhost:8000/docs](http://localhost:8000/docs).
+- **Endpoints Implementados (todos em `backend/app/main.py`, Fase III):**
+
+  | Método | Rota | Descrição |
+  |---|---|---|
+  | `GET` | `/api/health` | Verificação simples do serviço, usada pelo indicador "Backend: online/offline" do Header. |
+  | `POST` | `/api/translate` | Tradução ribossômica de mRNA maduro (Fase III) — único endpoint que o frontend efetivamente consome no modo "Python API". |
+  | `POST` | `/api/translate/export` | Exportação CSV no padrão oficial `linha;status;resultado;proteina` (seção 11/14 da especificação do Ribossomo). |
+  | `GET` | `/api/translate/examples` | Os 6 casos oficiais da seção 14 da especificação do Ribossomo. |
+  | `GET` | `/api/translate/genetic-code` | Código genético, STOPs e metadados de aminoácidos para customização visual. |
+
+  As Fases I, II e Pipeline (`/api/dna`, `/api/rna`, `/api/pipeline`) permanecem apenas **especificadas** em `docs/API_CONTRACT.md`, sem implementação no backend atual.
+
+- **Testes Automatizados do Backend:**
+  ```powershell
+  python -m unittest discover -s backend\tests -v
+  ```
+  5 testes em `backend/tests/test_ribosome_service.py`, cobrindo os 6 casos oficiais, o formato de exportação CSV e o desconto de adeninas de STOP na validação da cauda poli-A.
+
+- **Auditoria de Paridade Frontend × Backend:** uma bateria de 38 casos (os 6 exemplos oficiais da seção 14 + 32 casos de borda — CAP ausente/errado, START ausente, STOP ausente, quadro de leitura fora de fase, cauda poli-A no limite exato, etc.) foi comparada campo a campo entre `backend/app/ribosome_service.py` e `frontend/src/utils/translatorEngine.ts`, com **0 divergências**. O formato de exportação foi conferido caractere a caractere contra o exemplo da seção 11 da especificação oficial do Ribossomo.
+
+---
+
+## Roteiro de Apresentação
+
+Sugestão de sequência para demonstrar o projeto em sala de aula (5–10 minutos):
+
+1. **Suba os dois servidores:** backend (`python -m uvicorn backend.app.main:app --reload --host 127.0.0.1 --port 8000`) e frontend (`npm run dev` em `frontend/`), conforme [Como Executar o Projeto](#como-executar-o-projeto). Abra [http://localhost:5173](http://localhost:5173).
+2. **Fase I — DNA:** selecione a aba "Fase I: DNA" no cabeçalho, cole uma fita de DNA e mostre a classificação (`CORRETO` ou um dos `BUG - ...`), o pré-mRNA transcrito e a Régua de Posições.
+3. **Fase II — RNA:** selecione "Fase II: RNA", cole um pré-mRNA com íntron didático (`GU...A...AG`) e mostre o splicing, a adição da CAP 5' e da cauda poli-A gerando o mRNA maduro.
+4. **Fase III — Ribossomo em modo Python API:** selecione "Fase III: Ribossomo" e troque o seletor de "Simulação Local" para "Python API" — mostre o indicador "Backend: online" ao lado do seletor confirmando que o backend FastAPI está respondendo. Traduza um mRNA maduro e mostre a proteína gerada e a animação 3D do ribossomo.
+5. **Processar em Lote e exportar `resultados.txt`:** na Fase III (ou I/II), abra o modo de lote, cole ou importe múltiplas linhas de uma vez e baixe o arquivo `resultados.txt` no formato oficial `linha;status;resultado;proteina`.
+6. **Pipeline com animação:** selecione a aba "Pipeline", insira uma fita de DNA bruto e mostre a execução encadeada DNA → pré-mRNA → mRNA maduro → Proteína com a animação de evolução entre as fases.
+7. **Alternância de tema e contrato da API:** clique no botão sol/lua para alternar entre tema claro e escuro (note a cena 3D reagindo), e abra o botão "Contrato API" para mostrar o contrato Pydantic/FastAPI esperado. Para fechar, abra [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs) e mostre a documentação interativa (Swagger UI) gerada automaticamente pelo FastAPI.
 
 ---
 

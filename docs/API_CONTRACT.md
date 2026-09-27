@@ -88,6 +88,18 @@ Todas as especificações (BioCompiler 1.0, BioCompiler 2.0 e Ribossomo 1.0) exi
 
 ## 3. Especificação dos Endpoints
 
+> ### Status de Implementação
+>
+> | Seção | Rota | Status | Observação |
+> |---|---|---|---|
+> | 3.1 | `POST /api/dna` | 📄 **ESPECIFICADO, não implementado** | Não existe no backend atual (`backend/app/main.py`). O frontend no modo `python_backend` executa sempre o motor local `dnaEngine.ts` para a Fase I, sem tentativa de rede e sem aviso de contingência. |
+> | 3.2 | `POST /api/rna` | 📄 **ESPECIFICADO, não implementado** | Idem: sempre `rnaEngine.ts` local no modo `python_backend`. |
+> | 3.3 | `POST /api/translate` | ✅ **IMPLEMENTADO** | Único endpoint real do backend Python hoje (Fase III). No modo `python_backend` o frontend tenta este endpoint e cai para `translatorEngine.ts` local, com aviso em tela, apenas em caso de falha de rede. |
+> | 3.4 | `POST /api/pipeline` | 📄 **ESPECIFICADO, não implementado** | Idem: sempre `pipelineEngine.ts` local no modo `python_backend`. |
+> | 3.5 | `/api/health`, `/api/translate/export`, `/api/translate/examples`, `/api/translate/genetic-code` | ✅ **IMPLEMENTADOS** | Endpoints auxiliares da Fase III, todos presentes em `backend/app/main.py` — ver seção 3.5. |
+>
+> As seções 3.1, 3.2 e 3.4 permanecem no contrato como especificação normativa para uma futura implementação backend das Fases I, II e Pipeline; até lá, refletem apenas o comportamento dos motores locais equivalentes.
+
 ### 3.1 Fase I — `POST /api/dna` (BioCompiler 1.0)
 
 Recebe uma lista de fitas de DNA, valida o alfabeto canônico `{A, T, C, G}`, localiza a região codificante (START `ATG` até STOP em fase `TAA`/`TAG`/`TGA`), classifica a sequência e transcreve para pré-mRNA (`T` → `U`).
@@ -435,6 +447,62 @@ Encadeia sequencialmente as 3 fases moleculares a partir de fitas de DNA bruto. 
 | `success` | `boolean` | `true` somente se as 3 fases concluíram com sucesso (`dna.valid && rna.valid && ribosome.status == 'OK'`). |
 | `stoppedAtPhase` | `string` \| `null` | Fase em que o processamento parou: `"dna"`, `"rna"`, `"ribosome"` ou `null` se completou. |
 | `stopReason` | `string` | Explicação textual da causa da parada, ou `""` se `success == true`. |
+
+---
+
+### 3.5 Endpoints Auxiliares Implementados
+
+Além de `POST /api/translate` (seção 3.3), o backend atual expõe quatro rotas auxiliares, todas em `backend/app/main.py`. Nenhuma recebe `sequences`; todas respondem a `GET` (exceto o export), sem necessidade de payload.
+
+| Método | Rota | Descrição |
+|---|---|---|
+| `GET` | `/api/health` | Healthcheck simples, usado pelo indicador "Backend: online/offline" do Header. |
+| `POST` | `/api/translate/export` | Gera o arquivo de exportação da Fase III no formato oficial CSV (ver seção 7.3), a partir do mesmo `AnalyzeRequest` de `/api/translate`. |
+| `GET` | `/api/translate/examples` | Retorna os 6 casos oficiais da seção 14 da especificação do Ribossomo. |
+| `GET` | `/api/translate/genetic-code` | Retorna o código genético completo, os STOPs canônicos e os metadados de aminoácidos usados na customização visual do frontend. |
+
+#### `GET /api/health` — Response Schema (`HealthResponse`)
+```json
+{
+  "status": "ok",
+  "service": "ribossomo-protein-translator",
+  "version": "1.0.0"
+}
+```
+
+#### `POST /api/translate/export` — Resposta
+Corpo em texto puro (`Content-Type: text/csv; charset=utf-8`), sem envelope JSON — cabeçalho `linha;status;resultado;proteina` seguido de uma linha por sequência, no formato exato da seção 11/14 da especificação do Ribossomo (ver seção 7.3 deste contrato).
+
+#### `GET /api/translate/examples` — Response Schema
+```json
+{
+  "examples": [
+    {
+      "id": 1,
+      "name": "14.1 CORRETO",
+      "expectedResult": "CORRETO",
+      "expectedProtein": "Met-Ala-Lys-Pro",
+      "sequence": "m7GpppCCAUGGCUAAACCGUAAGG...AAA"
+    }
+  ]
+}
+```
+Um objeto por caso oficial (6 no total), na ordem da seção 14 da especificação.
+
+#### `GET /api/translate/genetic-code` — Response Schema (`GeneticCodeResponse`)
+```json
+{
+  "geneticCode": { "AUG": "Met", "UAA": "STOP", "...": "..." },
+  "aminoAcids": {
+    "Met": { "code3": "Met", "code1": "M", "namePt": "Metionina", "nameEn": "Methionine", "property": "special", "color": "#10b981" },
+    "...": { "...": "..." }
+  },
+  "stopCodons": ["UAA", "UAG", "UGA"]
+}
+```
+- `geneticCode`: mapa `codon -> sigla do aminoácido` (64 entradas).
+- `aminoAcids`: mapa `sigla -> metadados` (nome em português/inglês, propriedade físico-química, cor hexadecimal).
+- `stopCodons`: lista ordenada dos 3 códons de parada.
 
 ---
 
@@ -878,17 +946,15 @@ pré-mRNA: NÃO GERADO
 
 ## 6. Mecanismo de Fallback e Resiliência
 
-O frontend possui um mecanismo transparente de contingência implementado em `frontend/src/utils/apiClient.ts`:
+O frontend possui um mecanismo transparente de contingência implementado em `frontend/src/utils/apiClient.ts`. **Importante:** o comportamento difere por fase, refletindo o status de implementação da seção 3 — hoje só a Fase III tem endpoint real.
 
-1. **Modo `client`:** Toda a computação ocorre localmente no browser através dos motores TypeScript (`dnaEngine.ts`, `rnaEngine.ts`, `translatorEngine.ts`, `pipelineEngine.ts`). Nenhuma chamada de rede é realizada.
-2. **Modo `python_backend`:** O frontend envia a requisição HTTP `POST` para `http://localhost:8000/api/<endpoint>`.
-3. **Comportamento em Falha (Fallback Automático):** Caso o backend retorne status HTTP de erro (`5xx`, `4xx`), caia por timeout de rede ou esteja desligado (`connection refused`), o cliente:
-   - Captura a exceção no bloco `catch`;
-   - Executa imediatamente a análise idêntica através dos motores locais em TypeScript;
-   - Popula a interface com os resultados locais;
-   - Exibe um aviso contextual em tela indicando que a resposta decorre do mecanismo de contingência.
+1. **Modo `client`:** Toda a computação ocorre localmente no browser através dos motores TypeScript (`dnaEngine.ts`, `rnaEngine.ts`, `translatorEngine.ts`, `pipelineEngine.ts`). Nenhuma chamada de rede é realizada, em nenhuma fase.
+2. **Modo `python_backend`, Fase III (`/api/translate`):** o frontend envia a requisição HTTP `POST` para `http://localhost:8000/api/translate`.
+   - **Comportamento em Falha (Fallback Automático):** Caso o backend retorne status HTTP de erro (`5xx`, `4xx`), caia por timeout de rede ou esteja desligado (`connection refused`), o cliente captura a exceção no bloco `catch`, executa imediatamente a análise idêntica através de `translatorEngine.ts` local, popula a interface com os resultados locais e exibe um aviso contextual em tela indicando que a resposta decorre do mecanismo de contingência.
+3. **Modo `python_backend`, Fases I, II e Pipeline (`/api/dna`, `/api/rna`, `/api/pipeline`):** como esses endpoints ainda não existem no backend (seção "Status de Implementação" da seção 3), `analyzeDnaSequences`, `analyzeRnaSequences` e `analyzePipelineSequences` em `apiClient.ts` executam **sempre** o motor local correspondente (`dnaEngine.ts`, `rnaEngine.ts`, `pipelineEngine.ts`), **independentemente do `ProcessingMode` selecionado**. Nenhuma chamada de rede é tentada e nenhum aviso de contingência é exibido para essas três fases — não há "falha" a relatar, pois o comportamento é o esperado e documentado.
+4. **Indicador de Saúde do Backend:** o Header consulta `GET /api/health` (com timeout curto, via `checkBackendHealth()` em `apiClient.ts`) e exibe "Backend: online/offline/verificando…" ao lado do seletor Simulação Local / Python API. Esse indicador é informativo apenas para a Fase III — é a única fase que de fato depende do backend estar de pé.
 
-> **Requisito Crítico de Interoperabilidade:** O desenvolvedor backend DEVE respeitar rigorosamente os nomes das propriedades JSON, a hierarquia de objetos e os tipos de dados documentados neste contrato. O frontend consome as respostas do backend ou da simulação local de maneira intercambiável e transparente.
+> **Requisito Crítico de Interoperabilidade:** O desenvolvedor backend DEVE respeitar rigorosamente os nomes das propriedades JSON, a hierarquia de objetos e os tipos de dados documentados neste contrato. O frontend consome as respostas do backend ou da simulação local de maneira intercambiável e transparente — isso vale desde já para a Fase III, e valerá para as Fases I, II e Pipeline no dia em que seus endpoints forem implementados.
 
 ---
 

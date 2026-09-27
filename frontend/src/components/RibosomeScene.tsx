@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import type { CodonDetail } from '../types';
+import { useTheme } from './useTheme';
 
 interface RibosomeSceneProps {
   codons: CodonDetail[];
@@ -15,7 +16,31 @@ const NT_COLORS: Record<string, number> = {
   C: 0x06b6d4,
 };
 
+const SCENE_THEME = {
+  dark: {
+    background: 0x020617,
+    fogNear: 12,
+    fogFar: 30,
+    ambient: 0x334155,
+    ambientIntensity: 1.2,
+    tunnel: 0x020617,
+    cleft: 0x1e293b,
+    cleftEmissive: 0x0f172a,
+  },
+  light: {
+    background: 0xe2e8f0,
+    fogNear: 14,
+    fogFar: 34,
+    ambient: 0xffffff,
+    ambientIntensity: 1.6,
+    tunnel: 0xcbd5e1,
+    cleft: 0x94a3b8,
+    cleftEmissive: 0x475569,
+  },
+} as const;
+
 export default function RibosomeScene({ codons, currentStep }: RibosomeSceneProps) {
+  const { theme } = useTheme();
   const mountRef = useRef<HTMLDivElement>(null);
   const stateRef = useRef<{
     scene: THREE.Scene;
@@ -28,6 +53,9 @@ export default function RibosomeScene({ codons, currentStep }: RibosomeSceneProp
     sitePMarker: THREE.Group;
     tRnaA: THREE.Group;
     tRnaP: THREE.Group;
+    ambientLight: THREE.AmbientLight;
+    tunnelMat: THREE.MeshStandardMaterial;
+    cleftMat: THREE.MeshStandardMaterial;
     frameId: number;
   } | null>(null);
 
@@ -36,9 +64,11 @@ export default function RibosomeScene({ codons, currentStep }: RibosomeSceneProp
     const mount = mountRef.current;
     if (!mount) return;
 
+    const initialTheme = SCENE_THEME[document.documentElement.classList.contains('dark') ? 'dark' : 'light'];
+
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x020617);
-    scene.fog = new THREE.Fog(0x020617, 12, 30);
+    scene.background = new THREE.Color(initialTheme.background);
+    scene.fog = new THREE.Fog(initialTheme.background, initialTheme.fogNear, initialTheme.fogFar);
 
     const camera = new THREE.PerspectiveCamera(
       45,
@@ -61,7 +91,8 @@ export default function RibosomeScene({ codons, currentStep }: RibosomeSceneProp
     controls.target.set(0, 0, 0);
 
     // Lighting — biotech glow palette
-    scene.add(new THREE.AmbientLight(0x334155, 1.2));
+    const ambientLight = new THREE.AmbientLight(initialTheme.ambient, initialTheme.ambientIntensity);
+    scene.add(ambientLight);
     const key = new THREE.PointLight(0x22d3ee, 2.2, 25);
     key.position.set(5, 6, 5);
     scene.add(key);
@@ -89,7 +120,7 @@ export default function RibosomeScene({ codons, currentStep }: RibosomeSceneProp
     scene.add(largeSubunit);
 
     // Exit tunnel (carve visual via a darker cylinder)
-    const tunnelMat = new THREE.MeshStandardMaterial({ color: 0x020617, roughness: 0.9 });
+    const tunnelMat = new THREE.MeshStandardMaterial({ color: initialTheme.tunnel, roughness: 0.9 });
     const tunnel = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.35, 2.4, 24), tunnelMat);
     tunnel.position.set(0, 1.6, 0.3);
     tunnel.rotation.x = Math.PI / 2.4;
@@ -111,9 +142,9 @@ export default function RibosomeScene({ codons, currentStep }: RibosomeSceneProp
 
     // mRNA cleft groove indicator
     const cleftMat = new THREE.MeshStandardMaterial({
-      color: 0x1e293b,
+      color: initialTheme.cleft,
       roughness: 0.6,
-      emissive: 0x0f172a,
+      emissive: initialTheme.cleftEmissive,
     });
     const cleft = new THREE.Mesh(new THREE.TorusGeometry(1.55, 0.12, 12, 48, Math.PI), cleftMat);
     cleft.rotation.x = Math.PI / 2;
@@ -199,6 +230,9 @@ export default function RibosomeScene({ codons, currentStep }: RibosomeSceneProp
       sitePMarker,
       tRnaA,
       tRnaP,
+      ambientLight,
+      tunnelMat,
+      cleftMat,
       frameId: 0,
     };
 
@@ -236,6 +270,25 @@ export default function RibosomeScene({ codons, currentStep }: RibosomeSceneProp
       });
     };
   }, []);
+
+  // Reage à troca de tema sem recriar a cena inteira (fundo, névoa, luz ambiente e materiais neutros)
+  useEffect(() => {
+    const state = stateRef.current;
+    if (!state) return;
+    const palette = SCENE_THEME[theme];
+    const bg = new THREE.Color(palette.background);
+    state.scene.background = bg;
+    if (state.scene.fog instanceof THREE.Fog) {
+      state.scene.fog.color = bg;
+      state.scene.fog.near = palette.fogNear;
+      state.scene.fog.far = palette.fogFar;
+    }
+    state.ambientLight.color.setHex(palette.ambient);
+    state.ambientLight.intensity = palette.ambientIntensity;
+    state.tunnelMat.color.setHex(palette.tunnel);
+    state.cleftMat.color.setHex(palette.cleft);
+    state.cleftMat.emissive.setHex(palette.cleftEmissive);
+  }, [theme]);
 
   // Rebuild mRNA strand + peptide chain whenever codons/step change
   useEffect(() => {
