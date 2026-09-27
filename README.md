@@ -123,6 +123,14 @@ ribossomo-protein-translator/
 ├── pdf_text.txt                                 # Transcrição textual da especificação da Fase III
 ├── docs/
 │   └── API_CONTRACT.md                          # Contrato oficial completo da API FastAPI
+├── backend/
+│   ├── app/
+│   │   ├── main.py                              # Endpoints FastAPI da Fase III
+│   │   ├── ribosome_service.py                  # Lógica de tradução do Ribossomo
+│   │   └── schemas.py                           # Contratos Pydantic para o front-end
+│   ├── tests/                                   # Testes unitários dos casos oficiais
+│   ├── requirements.txt                         # Dependências do backend
+│   └── README.md                                # Guia de execução da API
 ├── frontend/
 │   ├── src/
 │   │   ├── components/                          # Componentes de apresentação e controle
@@ -184,6 +192,7 @@ ribossomo-protein-translator/
 ### Pré-requisitos
 - [Node.js](https://nodejs.org/) versão **20.19+** ou **22.12+** (requisito do Vite 8)
 - Gerenciador de pacotes `npm` instalado
+- Python 3.11+ para executar o backend FastAPI do Ribossomo
 
 ### Passo a Passo no Windows PowerShell
 
@@ -218,14 +227,20 @@ ribossomo-protein-translator/
 
 ## Integração com Backend Python (FastAPI)
 
-Embora o frontend execute 100% de todas as validações e animações localmente, ele foi projetado para consumir uma API externa desenvolvida em Python (FastAPI).
+Embora o frontend execute 100% de todas as validações e animações localmente, ele também pode consumir o backend Python em FastAPI disponível em `backend/`.
 
 - **Documentação Normativa:** O contrato completo de rotas, esquemas Pydantic, respostas JSON de exemplo e regras de contingência está documentado em [docs/API_CONTRACT.md](docs/API_CONTRACT.md).
+- **Execução do backend Ribossomo:**
+  ```powershell
+  python -m pip install -r backend\requirements.txt
+  python -m uvicorn backend.app.main:app --reload --host 0.0.0.0 --port 8000
+  ```
 - **Endpoints Mapeados:**
-  - `POST http://localhost:8000/api/dna` — Validação e transcrição de DNA (Fase I).
-  - `POST http://localhost:8000/api/rna` — Splicing didático e maturação de pré-mRNA (Fase II).
+  - `GET http://localhost:8000/api/health` — Verificação simples do serviço.
   - `POST http://localhost:8000/api/translate` — Tradução ribossômica de mRNA maduro (Fase III).
-  - `POST http://localhost:8000/api/pipeline` — Resolução unificada de ponta a ponta.
+  - `POST http://localhost:8000/api/translate/export` — Exportação CSV no padrão oficial `linha;status;resultado;proteina`.
+  - `GET http://localhost:8000/api/translate/examples` — Casos oficiais da especificação do Ribossomo.
+  - `GET http://localhost:8000/api/translate/genetic-code` — Código genético, STOPs e metadados de aminoácidos para customização visual.
 
 ---
 
