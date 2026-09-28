@@ -135,7 +135,8 @@ ribossomo-protein-translator/
 ├── exemplos/                                    # Arquivos .txt prontos para testar upload/lote por fase
 │   ├── fase-1-dna/                              # Casos e lote oficiais do BioCompiler 1.0
 │   ├── fase-2-rna/                              # Casos e lotes oficiais do BioCompiler 2.0
-│   └── fase-3-ribossomo/                        # Os 6 casos oficiais do Ribossomo 1.0 (seção 14)
+│   ├── fase-3-ribossomo/                        # Os 6 casos oficiais do Ribossomo 1.0 (seção 14)
+│   └── pipeline/                                # DNA bruto para testar o modo Pipeline (3 fases encadeadas)
 ├── docs/
 │   └── API_CONTRACT.md                          # Contrato oficial completo da API FastAPI
 ├── backend/
