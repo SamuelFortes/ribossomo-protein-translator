@@ -36,6 +36,7 @@
 - [Roteiro de Apresentação](#roteiro-de-apresentação)
 - [Especificações em PDF como Fonte da Verdade](#especificações-em-pdf-como-fonte-da-verdade)
 - [Interpretações Algorítmicas e Limitações Conhecidas](#interpretações-algorítmicas-e-limitações-conhecidas)
+- [Autores](#autores)
 - [Licença](#licença)
 
 ---
@@ -131,6 +132,10 @@ O repositório é organizado de forma modular, segregando componentes de interfa
 ribossomo-protein-translator/
 ├── 4.4. Especificacao_Ribossomo_1_0_2026_2.pdf  # PDF oficial da Fase III (Ribossomo)
 ├── pdf_text.txt                                 # Transcrição textual da especificação da Fase III
+├── exemplos/                                    # Arquivos .txt prontos para testar upload/lote por fase
+│   ├── fase-1-dna/                              # Casos e lote oficiais do BioCompiler 1.0
+│   ├── fase-2-rna/                              # Casos e lotes oficiais do BioCompiler 2.0
+│   └── fase-3-ribossomo/                        # Os 6 casos oficiais do Ribossomo 1.0 (seção 14)
 ├── docs/
 │   └── API_CONTRACT.md                          # Contrato oficial completo da API FastAPI
 ├── backend/
@@ -305,6 +310,13 @@ Para garantir a transparência técnica na correção acadêmica, foram consolid
    - Quando o códon STOP em fase é `UAA` ou `UGA`, suas próprias adeninas finais não são somadas à cauda poli-A. O motor desconta essas bases da CDS antes de validar a cauda, prevenindo falsos positivos de `BUG - cauda poli -A` em fitas que possuem exatamente 100 As adicionadas.
 3. **Fase III — Diferenciação Determinística entre `BUG - STOP ausente` e `BUG - quadro de leitura`:**
    - Quando há um `AUG` mas nenhum STOP em fase, o motor utiliza o critério matemático derivado dos dois exemplos oficiais do PDF (seções 14.4 e 14.5): se o comprimento total a partir do `AUG` até o fim da sequência (incluindo a cauda de 100 As) for múltiplo de 3, classifica-se como `BUG - STOP ausente` (exemplo 14.4, tamanho 117); se não for múltiplo de 3, classifica-se como `BUG - quadro de leitura` (exemplo 14.5, tamanho 118).
+
+---
+
+## Autores
+
+- Samuel Furtado Fortes
+- Jordan Carvalho Araújo
 
 ---
 
