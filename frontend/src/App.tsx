@@ -12,17 +12,19 @@ import RnaReport from './components/RnaReport';
 import RnaBatchPanel from './components/RnaBatchPanel';
 import PipelineView from './components/PipelineView';
 import PipelineBatchPanel from './components/PipelineBatchPanel';
-import ApiContractModal from './components/ApiContractModal';
 import { analyzeSequences, analyzeDnaSequences, analyzeRnaSequences, analyzePipelineSequences } from './utils/apiClient';
 import { generateDnaTerminalOutput } from './utils/dnaEngine';
 import type { ProcessingMode, RibosomeAnalysis, Phase, DnaAnalysis, RnaAnalysis, PipelineAnalysis } from './types';
 
+// A Simulação Local (client engine) é o único modo suportado pela UI hoje;
+// o toggle para o backend Python foi removido, mas o motor de análise ainda
+// aceita o parâmetro de modo internamente.
+const mode: ProcessingMode = 'client';
+
 function App() {
   const [phase, setPhase] = useState<Phase>('ribosome');
-  const [mode, setMode] = useState<ProcessingMode>('client');
   const [loading, setLoading] = useState(false);
   const [backendWarning, setBackendWarning] = useState<string | null>(null);
-  const [contractOpen, setContractOpen] = useState(false);
 
   // Fase III — Ribossomo (existente, intocado)
   const [sequence, setSequence] = useState('');
@@ -137,11 +139,8 @@ function App() {
   return (
     <div className="min-h-screen bg-white dark:bg-slate-950">
       <Header
-        mode={mode}
-        onModeChange={setMode}
         phase={phase}
         onPhaseChange={setPhase}
-        onOpenContract={() => setContractOpen(true)}
         backendWarning={backendWarning}
       />
 
@@ -308,10 +307,8 @@ function App() {
 
       <footer className="border-t border-slate-200 px-4 py-4 text-center text-[11px] text-slate-500 dark:border-slate-800 dark:text-slate-600">
         BioCompiler - Protein Translator · Frontend educacional · Modo atual:{' '}
-        <span className="text-slate-600 dark:text-slate-400">{mode === 'client' ? 'Simulação Local (Client Engine)' : 'Python API'}</span>
+        <span className="text-slate-600 dark:text-slate-400">Simulação Local (Client Engine)</span>
       </footer>
-
-      <ApiContractModal open={contractOpen} onClose={() => setContractOpen(false)} />
     </div>
   );
 }
