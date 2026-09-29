@@ -16,6 +16,17 @@ function senseExplanation(codon: CodonDetail): string {
     + `Em seguida o ribossomo avança uma trinca (translocação): o tRNA do Sítio P vai para o E e sai, e o tRNA-${codon.aminoAcid} passa do A para o P, deixando o Sítio A livre.`);
 }
 
+const EMPTY_MESSAGES: Record<string, string> = {
+  "BUG - CAP 5'": "A tradução não começou: sem o CAP 5' (m7Gppp) o ribossomo não consegue se ligar ao mRNA.",
+  'BUG - cauda poli -A': 'A tradução não começou: a cauda poli-A não tem exatamente 100 adeninas, então o mRNA é rejeitado antes de chegar ao ribossomo.',
+  'BUG - START ausente': 'A tradução não começou: não há códon AUG (START) para iniciar a leitura.',
+};
+
+function emptyMessage(analysis: RibosomeAnalysis | null): string {
+  return (analysis && EMPTY_MESSAGES[analysis.result])
+    ?? 'Nenhuma tradução em andamento. Carregue uma sequência com START válido para visualizar o ribossomo em ação.';
+}
+
 const STEP_EXPLANATIONS: Record<string, string> = {
   start: 'O tRNA iniciador carregando Metionina reconhece o códon AUG no Sítio P, ancorado pelo complexo de pré-iniciação (eIFs).',
   stop: 'Um fator de liberação (eRF1/eRF3) reconhece o códon de parada no Sítio A, hidrolisando a ligação entre o tRNA e o polipeptídeo, liberando a proteína completa.',
@@ -62,8 +73,7 @@ export default function RibosomePanel({ analysis }: RibosomePanelProps) {
           <RibosomeScene codons={codons} currentStep={step} />
         ) : (
           <div className="flex h-full items-center justify-center px-6 text-center text-sm text-slate-500">
-            Nenhuma tradução em andamento. Carregue uma sequência com START válido para visualizar o
-            ribossomo em ação.
+            {emptyMessage(analysis)}
           </div>
         )}
 
