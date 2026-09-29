@@ -1,6 +1,6 @@
 import { Download, ListChecks } from 'lucide-react';
 import type { PipelineAnalysis } from '../types';
-import { generatePipelineExportContent } from '../utils/pipelineEngine';
+import { generatePipelineExportContent, pipelineStatusLabel } from '../utils/pipelineEngine';
 
 interface PipelineBatchPanelProps {
   results: PipelineAnalysis[];
@@ -70,7 +70,7 @@ export default function PipelineBatchPanel({ results, onSelect, selectedIndex }:
           >
             <span className="font-mono text-slate-500 dark:text-slate-400">#{r.entryNumber}</span>
             <span className={`truncate px-2 ${r.success ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
-              {r.success ? 'SUCESSO' : `PAROU EM ${r.stoppedAtPhase?.toUpperCase()}`}
+              {pipelineStatusLabel(r)}
             </span>
             <span className="truncate font-mono text-slate-500">{r.ribosome?.protein ?? ''}</span>
           </button>

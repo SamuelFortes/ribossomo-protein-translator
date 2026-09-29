@@ -5,6 +5,7 @@ import { CheckCircle2, XCircle, MinusCircle, Circle, Loader2, RotateCcw, AlertTr
 import type { PipelineAnalysis, Phase } from '../types';
 import CopyButton from './CopyButton';
 import { useMediaQuery } from './useMediaQuery';
+import { pipelineStatusLabel } from '../utils/pipelineEngine';
 
 interface PipelineViewProps {
   analysis: PipelineAnalysis;
@@ -291,7 +292,7 @@ export default function PipelineView({ analysis }: PipelineViewProps) {
                 analysis.success ? 'bg-emerald-500/20 text-emerald-700 dark:text-emerald-300' : 'bg-rose-500/20 text-rose-700 dark:text-rose-300'
               }`}
             >
-              {analysis.success ? 'SUCESSO' : `PAROU EM ${analysis.stoppedAtPhase?.toUpperCase()}`}
+              {pipelineStatusLabel(analysis)}
             </span>
             <button
               onClick={() => setReplayNonce((n) => n + 1)}

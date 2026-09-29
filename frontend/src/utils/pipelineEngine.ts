@@ -67,6 +67,16 @@ export function analyzePipeline(dnaLine: string, entryNumber: number = 1): Pipel
   };
 }
 
+const PHASE_LABELS: Record<NonNullable<PipelineAnalysis['stoppedAtPhase']>, string> = {
+  dna: 'DNA',
+  rna: 'RNA',
+  ribosome: 'RIBOSSOMO',
+};
+
+export function pipelineStatusLabel(a: PipelineAnalysis): string {
+  return a.stoppedAtPhase ? `PAROU EM ${PHASE_LABELS[a.stoppedAtPhase]}` : 'SUCESSO';
+}
+
 export function generatePipelineExportContent(analyses: PipelineAnalysis[]): string {
   const lines: string[] = ['linha;status;fase_parada;proteina'];
   for (const a of analyses) {
