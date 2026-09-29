@@ -1,15 +1,23 @@
 import { useEffect, useRef, useState } from 'react';
 import { Play, Pause, SkipBack, SkipForward, RotateCcw } from 'lucide-react';
 import RibosomeScene from './RibosomeScene';
-import type { RibosomeAnalysis } from '../types';
+import type { CodonDetail, RibosomeAnalysis } from '../types';
 
 interface RibosomePanelProps {
   analysis: RibosomeAnalysis | null;
 }
 
+const COMPLEMENT: Record<string, string> = { A: 'U', U: 'A', G: 'C', C: 'G' };
+
+function senseExplanation(codon: CodonDetail): string {
+  const anticodon = codon.codon.split('').map((n) => COMPLEMENT[n] ?? n).join('');
+  return (`O tRNA-${codon.aminoAcid} (anticódon ${anticodon}) entra no Sítio A e pareia com o códon ${codon.codon}, trazendo ${codon.name}. `
+    + `A peptidil transferase liga esse aminoácido à cadeia que estava no Sítio P (ligação peptídica). `
+    + `Em seguida o ribossomo avança uma trinca (translocação): o tRNA do Sítio P vai para o E e sai, e o tRNA-${codon.aminoAcid} passa do A para o P, deixando o Sítio A livre.`);
+}
+
 const STEP_EXPLANATIONS: Record<string, string> = {
   start: 'O tRNA iniciador carregando Metionina reconhece o códon AUG no Sítio P, ancorado pelo complexo de pré-iniciação (eIFs).',
-  sense: 'O tRNA correspondente entra no Sítio A, o ribossomo confere o pareamento com o mRNA, e a peptidil transferase forma a ligação peptídica. O tRNA então se move do Sítio A para o Sítio P (translocação), liberando o Sítio E.',
   stop: 'Um fator de liberação (eRF1/eRF3) reconhece o códon de parada no Sítio A, hidrolisando a ligação entre o tRNA e o polipeptídeo, liberando a proteína completa.',
 };
 
@@ -127,7 +135,7 @@ export default function RibosomePanel({ analysis }: RibosomePanelProps) {
           {currentCodon && (
             <div className="rounded-xl border border-slate-200 bg-slate-100/60 p-3 text-xs leading-relaxed text-slate-600 dark:border-slate-800 dark:bg-slate-900/60 dark:text-slate-300">
               <span className="mr-1 font-semibold text-emerald-600 dark:text-emerald-400">Passo {step + 1}/{codons.length}:</span>
-              {STEP_EXPLANATIONS[currentCodon.type]}
+              {currentCodon.type === 'sense' ? senseExplanation(currentCodon) : STEP_EXPLANATIONS[currentCodon.type]}
             </div>
           )}
         </>
